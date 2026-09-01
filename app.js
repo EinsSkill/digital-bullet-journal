@@ -572,10 +572,6 @@ const FRAME = `<svg class="frame" viewBox="0 0 100 100" preserveAspectRatio="non
   <path d="M3.6 4h92.8v92" stroke-width=".2"/>
   <path d="M3.6 4v92h92.8" stroke-width=".2"/></svg>`;
 
-/** Handgezogene Trennlinie zwischen zwei Bereichen. */
-const DIV = `<svg class="divider" viewBox="0 0 200 6" fill="none" stroke="currentColor"
-  stroke-width="1.4" stroke-linecap="round" preserveAspectRatio="none" filter="url(#ink)" aria-hidden="true">
-  <path d="M2 3.4c32-2 64-2.4 96-1.2 30 1.2 60 1.6 100-.4"/></svg>`;
 
 /* --- Kleine UI-Zeichen --------------------------------------- */
 const ic = (p, o = {}) => `<svg viewBox="0 0 24 24" width="${o.s || 16}" height="${o.s || 16}"
@@ -587,7 +583,6 @@ const X_SVG     = ic(`<path d="M6.4 6.2 17.6 17.8M17.6 6.2 6.4 17.8"/>`, {w:2.2,
 const PEN_SVG   = ic(`<path d="M4 20.2c.6-2 1-3.4 1.2-4.2L17 4.4c1-1 2.4-1 3.4 0s1 2.4 0 3.4L8.6 19.4c-.8.2-2.2.6-4.6.8Z"/><path d="m15.4 6.6 3 3" stroke-width="1.2"/>`, {s:13});
 const CAM_SVG   = ic(`<path d="M3.2 8.8c3-.4 4.4-.4 4.6-.6.4-.4 1-1.4 1.6-2.2h5.2c.6.8 1.2 1.8 1.6 2.2.2.2 1.6.2 4.6.6.4 3.6.4 7.2 0 10.8-6.2.6-11.4.6-17.6 0-.4-3.6-.4-7.2 0-10.8Z"/><path d="M12 10.2c2 0 3.6 1.6 3.6 3.6S14 17.4 12 17.4s-3.6-1.6-3.6-3.6S10 10.2 12 10.2Z" stroke-width="1.3"/>`, {s:22, w:1.6});
 const NOTE_SVG  = ic(`<path d="M9.4 17.6V5.2l9.6-1.8v12"/><path d="M9.4 8.4 19 6.6" stroke-width="1.2"/><path d="M9.4 17.6c0 1.4-1.4 2.4-3.2 2.4S3 19 3 17.6s1.4-2.4 3.2-2.4 3.2 1 3.2 2.4ZM19 15.2c0 1.4-1.4 2.4-3.2 2.4s-3.2-1-3.2-2.4 1.4-2.4 3.2-2.4 3.2 1 3.2 2.4Z"/>`, {s:20, w:1.6});
-const PLUS_SVG  = ic(`<path d="M12 5.2v13.6M5.2 12h13.6"/>`, {w:2.1});
 const ARROW_SVG = ic(`<path d="M4 12.2c5.6-.4 11-.4 16 0M14.4 7.2c1.8 2 3.6 3.6 5.6 5-2 1.4-3.8 3-5.6 5"/>`, {w:1.8});
 
 /** Herz für die Song-Bewertung — gefüllt oder offen. */
@@ -701,7 +696,8 @@ function miniCal(m){
     if ((f + d - 1) % 7 === 0 && d > 1) cells += "</tr><tr>";
     cells += `<td class="${we ? "we" : ""}${has ? " has" : ""}">${d}</td>`;
   }
-  return `<button class="mini" data-go="m:${m}:1" style="--mc:${lift(MONTHS[m].ac)}">
+  return `<button class="mini" data-go="m:${m}:1"
+    style="--mc:${lift(MONTHS[m].ac)};--mc-ink:color-mix(in oklab,${lift(MONTHS[m].ac)},var(--ink) 40%)">
     <h4>${MONTHS[m].n}</h4>
     <table><thead><tr>${WS.map(w => `<th>${w}</th>`).join("")}</tr></thead>
     <tbody><tr>${cells}</tr></tbody></table></button>`;
@@ -861,7 +857,7 @@ function pgL10list(){
   return `<div class="l10-list">${rows}</div>
     <div class="box l10-detail" style="--accent:${c};position:relative">
       <span class="tape tr"></span>
-      <p class="label" style="color:${c}">${esc(l.t)}</p>
+      <p class="label" style="color:color-mix(in oklab,${c},var(--ink) 40%)">${esc(l.t)}</p>
       <div style="display:flex;gap:14px;align-items:center;margin:7px 0 9px;flex-wrap:wrap">
         <span class="label" style="letter-spacing:.1em">Jetzt</span>
         <span class="stepper"><button data-l10step="now:-1">−</button>
@@ -883,7 +879,8 @@ function pgL10list(){
 /* --- Geburtstage -------------------------------------------- */
 function bdBlock(m){
   const list = S.birthdays.filter(b => b.m === m).sort((a,b) => a.d - b.d);
-  return `<div class="bd-month" style="--mc:${lift(MONTHS[m].ac)}">
+  return `<div class="bd-month"
+    style="--mc:${lift(MONTHS[m].ac)};--mc-ink:color-mix(in oklab,${lift(MONTHS[m].ac)},var(--ink) 40%)">
     <h4>${MONTHS[m].n}</h4>
     ${list.map(b => `<div class="bd-row">
       <span class="dt num">${b.d}.</span>
@@ -1514,7 +1511,12 @@ function render(){
   book.style.setProperty("--stack-l", (0.08 + fort * 0.86).toFixed(3));
   book.style.setProperty("--stack-r", (0.94 - fort * 0.86).toFixed(3));
 
-  [L, R].forEach(p => { p.style.setProperty("--accent", lift(sp.ac)); });
+  [L, R].forEach(p => {
+    p.style.setProperty("--accent", lift(sp.ac));
+    // Schrift auf gefüllten Akzentflächen (aktive Reiter, Schalter):
+    // helle Monatsfarben tragen Weiß nicht — dieselbe Regel wie bei den Registern.
+    p.style.setProperty("--accent-fg", fgOn(sp.ac));
+  });
   $("#pgL").innerHTML = sp.L ? sp.L() : "";
   $("#pgR").innerHTML = sp.R ? sp.R() : "";
 
