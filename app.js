@@ -1608,24 +1608,32 @@ const curveAt = t => Math.sin(Math.PI * Math.min(1, Math.max(0, t)));
  * Der Bogen beginnt am Bundsteg und rollt sich mit t auf.
  *   grad  – Grunddrehung des Blattes (0 … 180)
  *   bend  – zusätzlicher Winkel, der sich über die Blattbreite verteilt
+ *   back  – zurückblättern: das Blatt liegt links und klappt nach rechts
+ *
+ * Beide Richtungen laufen über dieselbe Rechnung, nur gespiegelt: der
+ * Abstand von der Falz wächst gleich, das Vorzeichen dreht sich. Die
+ * Streifen selbst werden nie gespiegelt — sonst stünde die Schrift
+ * seitenverkehrt.
  */
-function poseStrips(els, w, grad, bend, dir){
-  let x = 0, z = 0;
+function poseStrips(els, w, grad, bend, back){
+  const vz = back ? 1 : -1;
+  let weg = 0, z = 0;                    // Weg entlang des Blattes, Höhe über der Seite
   for (let i = 0; i < els.length; i++){
     const s = els[i];
     // Anteil dieses Streifens am Gesamtwinkel
-    const a = dir * (grad + bend * (i / Math.max(1, els.length - 1)));
+    const a = vz * (grad + bend * (i / Math.max(1, els.length - 1)));
     const rad = a * Math.PI / 180;
+    const x = back ? -weg : weg;         // nach links bzw. nach rechts von der Falz
     s.el.style.transform =
       `translate3d(${x.toFixed(2)}px,0,${z.toFixed(2)}px) rotateY(${a.toFixed(2)}deg)`;
     // Licht: je steiler der Streifen steht, desto dunkler
     const dunkel = Math.min(.46, Math.abs(Math.sin(rad)) * .42);
     s.sh.style.opacity = dunkel.toFixed(3);
-    // Ende dieses Streifens ist der Anfang des nächsten.
-    // Bei rotateY(θ) zeigt die lokale X-Achse auf (cos θ, 0, −sin θ) —
-    // deshalb hebt sich das Blatt zum Betrachter statt hinter die Seite.
-    x += w * Math.cos(rad);
-    z -= w * Math.sin(rad);
+    // Ende dieses Streifens ist der Anfang des nächsten. Der Betrag von
+    // sin sorgt dafür, dass sich das Blatt in beide Richtungen zum
+    // Betrachter hebt statt hinter die Seite zu tauchen.
+    weg += w * Math.cos(rad);
+    z += w * Math.abs(Math.sin(rad));
   }
 }
 
@@ -1645,33 +1653,42 @@ function buildStrips(vorneHTML, hintenHTML, back){
   const halb = $("#spread").getBoundingClientRect().width / 2;
   const w = halb / N;
 
+  // Vorwärts liegt das Blatt rechts vom Bundsteg, rückwärts links.
+  // Die Gruppe wird NICHT gespiegelt — die Streifen rechnen selbst.
   const wrap = document.createElement("div");
-  wrap.style.cssText = `position:absolute;top:0;height:100%;left:50%;width:${halb}px;
-    transform-style:preserve-3d;${back ? "transform:scaleX(-1);transform-origin:left center;" : ""}`;
+  wrap.style.cssText = `position:absolute;top:0;height:100%;width:${halb}px;
+    ${back ? "right:50%;" : "left:50%;"}transform-style:preserve-3d;`;
+
+  // Ausschnitt-Versatz: an der Falz beginnend. Vorwärts zählt die rechte
+  // Seite von links, rückwärts die linke Seite von rechts — die beiden
+  // Formeln tauschen zwischen Vorder- und Rückseite einfach die Plätze.
+  const anFalz  = i => (-i * w).toFixed(2);
+  const vonAuss = i => ((i + 1) * w - halb).toFixed(2);
 
   const els = [];
   for (let i = 0; i < N; i++){
     const s = document.createElement("div");
     s.className = "strip" + (i === N - 1 ? " edge" : "");
     // 0.6px Überlappung, damit zwischen den Streifen keine Fuge aufblitzt
-    s.style.cssText = `width:${(w + .6).toFixed(2)}px;left:0;`;
+    s.style.cssText = `width:${(w + .6).toFixed(2)}px;` +
+      (back ? "right:0;transform-origin:right center;" : "left:0;");
 
     const vorne = document.createElement("div");
     vorne.className = "face front";
-    vorne.style.cssText = `width:${(w + .6).toFixed(2)}px;left:0;`;
+    vorne.style.cssText = `width:${(w + .6).toFixed(2)}px;${back ? "right:0;" : "left:0;"}`;
     const fv = document.createElement("div");
     fv.className = "fc";
-    fv.style.cssText = `width:${halb}px;left:${(-i * w).toFixed(2)}px;`;
+    fv.style.cssText = `width:${halb}px;left:${back ? vonAuss(i) : anFalz(i)}px;`;
     fv.innerHTML = vorneHTML;
     vorne.appendChild(fv);
 
     const hinten = document.createElement("div");
     hinten.className = "face back";
-    hinten.style.cssText = `width:${(w + .6).toFixed(2)}px;left:0;`;
+    hinten.style.cssText = `width:${(w + .6).toFixed(2)}px;${back ? "right:0;" : "left:0;"}`;
     const fh = document.createElement("div");
     fh.className = "fc";
     // Von der Falz aus gleich weit — auf der Rückseite von der anderen Kante
-    fh.style.cssText = `width:${halb}px;left:${((i + 1) * w - halb).toFixed(2)}px;`;
+    fh.style.cssText = `width:${halb}px;left:${back ? anFalz(i) : vonAuss(i)}px;`;
     fh.innerHTML = hintenHTML;
     hinten.appendChild(fh);
 
@@ -1685,7 +1702,9 @@ function buildStrips(vorneHTML, hintenHTML, back){
   // Wanderschatten auf der Seite darunter
   const under = document.createElement("div");
   under.className = "under-shade";
-  under.style.cssText += back ? "right:50%;transform:scaleX(-1);" : "left:50%;";
+  under.style.cssText += back
+    ? "right:50%;background:linear-gradient(to left, rgba(0,0,0,.3), transparent 62%);"
+    : "left:50%;";
 
   flip.append(under, wrap);
   flip.classList.add("on");
@@ -1717,7 +1736,6 @@ function animateTurn(mutate, back){
   const D = 700;
   const start = performance.now();
   let frames = 0;
-  const dir = -1;                      // Blatt dreht immer vom Betrachter weg
 
   const schritt = (now) => {
     const t = Math.min(1, (now - start) / D);
@@ -1725,7 +1743,7 @@ function animateTurn(mutate, back){
     const e = t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
     const grad = e * 174;
     const bend = curveAt(t) * 22;      // Biegung, am stärksten in der Mitte
-    poseStrips(bau.els, bau.w, grad, bend, dir);
+    poseStrips(bau.els, bau.w, grad, bend, back);
     bau.under.style.opacity = (curveAt(t) * .72).toFixed(3);
     frames++;
     if (t < 1) flipRAF = requestAnimationFrame(schritt);
