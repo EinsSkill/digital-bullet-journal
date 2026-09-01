@@ -307,10 +307,19 @@ const ART = {
     d:`M0 16V-2`,
     i:`M0-2c-5.6-1-8.6-4-9-9 4.6-1.6 8 0 10 4.8-2.4-4.8-2-8.6 1-11.4 3.2 2.6 3.8 6.4 1.6 11.4 2.2-4.8 5.6-6.4 10-4.6-.4 5-3.4 8-9 9
        M0 8c-3.2-.8-5-2.6-5.4-5.4`},
+  // Fünf breite Lappen mit weichen Buchten — gleichmäßige Zacken hätten
+  // aus dem Blatt einen Stern gemacht.
   leafMaple:{
-    d:`M0 16V2`,
-    i:`M0 2 -4.4-3.4l-6.6 1.4 2.6-4.4-6-2.6 5-2-3.4-5.6 6 1.6.6-6 4.2 4.6 4.2-4.6.6 6 6-1.6-3.4 5.6 5 2-6 2.6 2.6 4.4-6.6-1.4Z`,
-    f:`M0 1.4-3.8-3l-5.6 1.2 2.2-3.8-5-2.2 4.2-1.6-2.8-4.8 5 1.4.6-5 3.6 3.8 3.6-3.8.6 5 5-1.4-2.8 4.8 4.2 1.6-5 2.2 2.2 3.8-5.6-1.2Z`},
+    d:`M0 16V2.5`,
+    i:`M0 2.5Q-2.2.6-5.8 1.6Q-4.6-1.4-5.6-2.9Q-9.2-2.3-11.4-1.8Q-8.8-5.1-7.2-7.7
+       Q-8.7-9.2-9.2-11.3Q-6.1-10.2-3.4-9.7Q-1.9-12.7 0-15.8Q1.9-12.7 3.4-9.7
+       Q6.1-10.2 9.2-11.3Q8.7-9.2 7.2-7.7Q8.8-5.1 11.4-1.8Q9.2-2.3 5.6-2.9
+       Q4.6-1.4 5.8 1.6Q2.2.6 0 2.5Z
+       M0 1.2V-9M0-6.4-4.6-9.2M0-6.4 4.6-9.2M0-2.2-6.2-4.4M0-2.2 6.2-4.4`,
+    f:`M0 2.2Q-2 .5-5.2 1.4Q-4.2-1.2-5-2.6Q-8.3-2-10.3-1.6Q-8-4.6-6.5-7
+       Q-7.8-8.3-8.3-10.2Q-5.5-9.2-3.1-8.7Q-1.7-11.4 0-14.2Q1.7-11.4 3.1-8.7
+       Q5.5-9.2 8.3-10.2Q7.8-8.3 6.5-7Q8-4.6 10.3-1.6Q8.3-2 5-2.6
+       Q4.2-1.2 5.2 1.4Q2 .5 0 2.2Z`},
   acorn:{
     d:`M-8-2c0 8.6 3.6 16.4 8 16.4S8 6.6 8-2Z`,
     i:`M-10.4-2c0-4.4 4.6-8 10.4-8s10.4 3.6 10.4 8ZM0-10v-5.6
@@ -393,117 +402,160 @@ function motif(name, opt = {}){
 }
 
 /* ============================================================
-   MONATSTHEMEN
-   Jeder Monat bekommt eine eigene Illustrationsfamilie, ein
-   eigenes Moodtracker-Motiv samt Anordnung und eine eigene
-   Deckblatt-Komposition. Die Farbwelt liegt in MONTHS (§2).
+   MONATSKAPITEL
+   Fünf Kompositionsfamilien geben dem Buch seinen Rhythmus.
+   Innerhalb einer Familie ist jeder Monat einzeln gesetzt:
+   die Punktlisten unten sind von Hand gelegt, nicht gerechnet.
+
+   fam    Grundhaltung der Seite
+   cover  Komposition des Monatsdeckblatts   [motiv, x%, y%, größe, drehung]
+   rand   sehr sparsame Deko für Innenseiten
+   ecke   ein einzelnes Motiv für Textseiten
    ============================================================ */
 
+/* Die fünf Familien steuern über eine Klasse am Seitencontainer, wie viel
+   Luft eine Seite bekommt, wie groß der Titel steht und wie präsent die
+   Deko sein darf — siehe Abschnitt KAPITELFAMILIEN in styles.css:
+
+     still  Jan, Feb   klar und leer, großer Titel, Deko nur oben und unten
+     ranke  Mär–Mai    organisch aufsteigend, Deko wächst von unten links
+     offen  Jun–Aug    luftig, Mitte bewusst frei, Deko am Rand
+     dicht  Sep–Nov    warm geschichtet, enger gesetzt, mehr Ebenen
+     fest   Dez        gefasst und feierlich, symmetrischer Aufbau         */
+
 const THEME = [
-  { mood:"snowflake", layout:"drift",  thema:"Stille",
-    deco:[["firSprig",10,74,1.5,-16],["moonSlim",86,17,1.15,0],["starFive",22,20,.55,0],
-          ["starFive",30,13,.38,0],["mug",84,80,1.2,4],["snowflake",68,10,.5,0]],
-    kranz:["firSprig","starFive","snowflake"] },
+  /* --- Januar · still ------------------------------------- */
+  { mood:"snowflake", layout:"drift", thema:"Stille", fam:"still", ecke:"firSprig",
+    cover:[["firSprig",17,70,1.5,-13],["moonSlim",83,25,1.15,0],["starFive",73,13,.42,0],
+           ["snowflake",26,24,.62,0],["starFive",30,15,.3,0]],
+    rand:[["snowflake",90,12,.5,0],["firSprig",8,86,.7,-10]] },
 
-  { mood:"heart", layout:"rows", thema:"Wärme",
-    deco:[["heart",13,20,.85,-12],["bow",85,76,1.15,6],["daisy",88,20,.9,10],
-          ["heart",22,80,1.1,8],["sparkle",74,14,.45,0],["daisy",12,72,.7,-8]],
-    kranz:["heart","daisy","bow"] },
+  /* --- Februar · still ------------------------------------ */
+  { mood:"heart", layout:"rows", thema:"Wärme", fam:"still", ecke:"bow",
+    cover:[["bow",78,72,1.25,7],["heart",22,26,.8,-11],["daisy",84,22,.62,14],
+           ["heart",29,80,.5,9],["sparkle",70,13,.34,0]],
+    rand:[["heart",91,14,.45,-8],["bow",9,88,.6,5]] },
 
-  { mood:"bud", layout:"rows", thema:"Anfang",
-    deco:[["bud",14,74,1.4,-6],["birdling",84,22,1.15,0],["bud",26,82,1,10],
-          ["tulip",88,74,1.2,4],["sparkle",70,16,.4,0],["bud",76,84,.8,-12]],
-    kranz:["bud","tulip","birdling"] },
+  /* --- März · ranke --------------------------------------- */
+  { mood:"bud", layout:"rows", thema:"Anfang", fam:"ranke", ecke:"bud",
+    cover:[["bud",13,84,1.35,-4],["bud",19,68,1.05,7],["tulip",27,54,.85,-9],
+           ["birdling",79,27,1.05,0],["bud",34,41,.6,12],["sparkle",71,16,.32,0]],
+    rand:[["bud",7,90,.7,-6]] },
 
-  { mood:"raincloud", layout:"drift", thema:"Geduld",
-    deco:[["umbrella",84,22,1.3,8],["raincloud",16,20,1.1,0],["tulip",14,78,1.15,-8],
-          ["bud",86,80,1,6],["raincloud",70,76,.7,0],["birdling",26,86,.7,0]],
-    kranz:["umbrella","tulip","raincloud"] },
+  /* --- April · ranke -------------------------------------- */
+  { mood:"raincloud", layout:"drift", thema:"Geduld", fam:"ranke", ecke:"umbrella",
+    cover:[["umbrella",80,24,1.3,7],["raincloud",21,19,.95,0],["tulip",12,83,1.2,-7],
+           ["bud",21,70,.85,10],["birdling",73,80,.7,0],["tulip",30,57,.55,-14]],
+    rand:[["raincloud",90,13,.5,0]] },
 
-  { mood:"daisy", layout:"scatter", thema:"Aufblühen",
-    deco:[["daisy",12,24,1.35,-14],["butterfly",84,20,1.15,12],["daisy",20,80,1.15,8],
-          ["tulip",88,78,1.2,-6],["butterfly",72,86,.7,-10],["daisy",90,46,.6,0]],
-    kranz:["daisy","butterfly","tulip"] },
+  /* --- Mai · ranke ---------------------------------------- */
+  { mood:"daisy", layout:"scatter", thema:"Aufblühen", fam:"ranke", ecke:"daisy",
+    cover:[["daisy",14,80,1.4,-12],["daisy",22,64,1,9],["butterfly",78,24,1.1,13],
+           ["tulip",30,49,.7,-6],["daisy",86,76,.75,7],["butterfly",36,36,.45,-18]],
+    rand:[["daisy",92,15,.5,10]] },
 
-  { mood:"sunFace", layout:"arc", thema:"Leichtigkeit",
-    deco:[["sunFace",85,18,1.25,0],["lemon",14,76,1.25,-12],["daisy",16,22,.95,10],
-          ["lemon",86,80,.85,14],["butterfly",70,84,.75,8],["sparkle",26,14,.42,0]],
-    kranz:["sunFace","lemon","daisy"] },
+  /* --- Juni · offen --------------------------------------- */
+  { mood:"sunFace", layout:"arc", thema:"Leichtigkeit", fam:"offen", ecke:"lemon",
+    cover:[["sunFace",84,19,1.3,0],["lemon",13,79,1.2,-11],["daisy",90,79,.62,8],
+           ["lemon",8,60,.5,15]],
+    rand:[["sunFace",92,11,.45,0]] },
 
-  { mood:"wave", layout:"tide", thema:"Freiheit",
-    deco:[["shell",86,80,1.2,-10],["sunFace",18,18,1.05,0],["iceCream",86,20,1.1,8],
-          ["shell",13,74,.85,14],["wave",50,92,1.3,0],["sparkle",74,12,.4,0]],
-    kranz:["shell","sunFace","wave"] },
+  /* --- Juli · offen --------------------------------------- */
+  { mood:"wave", layout:"tide", thema:"Freiheit", fam:"offen", ecke:"shell",
+    cover:[["sunFace",17,20,1.05,0],["shell",85,79,1.2,-9],["wave",50,93,1.5,0],
+           ["iceCream",88,22,.85,7]],
+    rand:[["wave",50,95,1.1,0]] },
 
-  { mood:"lemon", layout:"scatter", thema:"Fülle",
-    deco:[["lemon",14,22,1.3,-8],["leafOak",86,22,1.15,14],["shell",86,80,1,10],
-          ["daisy",18,80,1.05,-6],["sunFace",74,88,.7,0],["lemon",90,50,.6,12]],
-    kranz:["lemon","leafOak","daisy"] },
+  /* --- August · offen ------------------------------------- */
+  { mood:"lemon", layout:"scatter", thema:"Fülle", fam:"offen", ecke:"leafOak",
+    cover:[["lemon",15,23,1.25,-7],["leafOak",84,25,1.1,15],["daisy",19,80,.8,-5],
+           ["shell",87,78,.7,11]],
+    rand:[["leafOak",91,14,.5,18]] },
 
-  { mood:"leafOak", layout:"rows", thema:"Sammeln",
-    deco:[["book",84,78,1.3,-6],["leafOak",14,20,1.2,-18],["coffee",14,78,1.1,6],
-          ["leafOak",86,20,1,22],["acorn",74,88,.75,-8],["sparkle",24,14,.4,0]],
-    kranz:["leafOak","book","acorn"] },
+  /* --- September · dicht ---------------------------------- */
+  { mood:"leafOak", layout:"rows", thema:"Sammeln", fam:"dicht", ecke:"book",
+    cover:[["book",79,76,1.25,-5],["leafOak",15,22,1.15,-17],["coffee",16,76,1,5],
+           ["acorn",70,86,.7,-9],["leafOak",86,20,.85,21],["acorn",25,88,.5,13]],
+    rand:[["leafOak",92,13,.5,-14],["acorn",7,89,.55,10]] },
 
-  { mood:"leafMaple", layout:"scatter", thema:"Gemütlich",
-    deco:[["pumpkin",85,78,1.25,-6],["leafMaple",14,20,1.25,12],["leafMaple",22,82,1,-22],
-          ["candle",87,20,1.05,0],["acorn",72,88,.75,10],["leafOak",90,48,.65,-14]],
-    kranz:["pumpkin","leafMaple","acorn"] },
+  /* --- Oktober · dicht ------------------------------------ */
+  { mood:"leafMaple", layout:"scatter", thema:"Gemütlich", fam:"dicht", ecke:"pumpkin",
+    cover:[["pumpkin",81,75,1.2,-5],["leafMaple",15,21,1.2,11],["leafMaple",24,81,.95,-21],
+           ["candle",85,21,.95,0],["acorn",70,87,.65,9],["leafMaple",90,50,.5,-13],
+           ["acorn",9,62,.45,17]],
+    rand:[["leafMaple",92,14,.55,12],["acorn",8,88,.5,-8]] },
 
-  { mood:"teabag", layout:"hang", thema:"Ruhe",
-    deco:[["mug",84,80,1.3,-4],["raincloud",16,18,1.1,0],["blanket",14,80,1.2,4],
-          ["candle",88,20,1,0],["teabag",72,88,.7,8],["leafMaple",26,86,.6,-16]],
-    kranz:["mug","teabag","blanket"] },
+  /* --- November · dicht ----------------------------------- */
+  { mood:"teabag", layout:"hang", thema:"Ruhe", fam:"dicht", ecke:"mug",
+    cover:[["mug",80,77,1.3,-4],["raincloud",19,18,1.05,0],["blanket",16,81,1.1,3],
+           ["candle",86,20,.9,0],["teabag",70,88,.6,7],["leafMaple",27,87,.5,-15]],
+    rand:[["mug",91,14,.55,-5],["teabag",8,88,.5,6]] },
 
-  { mood:"starFive", layout:"drift", thema:"Licht",
-    deco:[["pineBranch",13,76,1.4,-8],["ornament",86,20,1.15,4],["starFive",22,18,.6,0],
-          ["candle",86,80,1.15,0],["bow",72,88,.7,-8],["starFive",70,12,.42,0]],
-    kranz:["pineBranch","starFive","ornament"] }
+  /* --- Dezember · fest ------------------------------------ */
+  { mood:"starFive", layout:"drift", thema:"Licht", fam:"fest", ecke:"pineBranch",
+    cover:[["pineBranch",17,76,1.4,-7],["pineBranch",83,76,1.4,7],["ornament",84,22,1.1,4],
+           ["starFive",24,20,.62,0],["candle",50,88,.85,0],["starFive",68,12,.36,0],
+           ["bow",34,86,.5,-8]],
+    rand:[["starFive",91,12,.45,0],["pineBranch",8,88,.6,-8]] }
 ];
 
 /* --- Kompositionen ------------------------------------------ */
 
-/** Verstreute Deko einer Seite. `op` steuert die Zurückhaltung. */
-function scene(m, opt = {}){
-  const t = THEME[m], base = opt.size ?? 78;
-  const items = (opt.only ? t.deco.slice(0, opt.only) : t.deco);
+/** Eine von Hand gelegte Motivgruppe. Keine Rechnung, nur Platzierung. */
+function group(punkte, opt = {}){
+  const base = opt.size ?? 78;
   return `<div class="scene" aria-hidden="true" style="opacity:${opt.op ?? .42}">
-    ${items.map(([n, x, y, sc, rot]) => `
+    ${punkte.map(([n, x, y, sc, rot]) => `
       <span class="deco" style="left:${x}%;top:${y}%;width:${Math.round(base * sc)}px;
         transform:translate(-50%,-50%) rotate(${rot}deg)">${motif(n, {w:.9})}</span>`).join("")}
   </div>`;
 }
 
-/** Kranz aus drei Motiven — für Deckblätter. */
-function wreath(names, opt = {}){
-  const r = opt.r ?? 47, n = opt.count ?? 16;
-  const parts = Array.from({length:n}, (_, i) => {
-    const deg = (i / n) * 360;                          // 0° = oben, im Uhrzeigersinn
-    if (opt.gap && (deg < 28 || deg > 332)) return "";  // Lücke oben, damit der Titel frei steht
+/** Deckblatt-Komposition eines Monats. */
+const coverArt = m => group(THEME[m].cover, {op:.46, size:86});
+
+/** Sehr sparsame Deko für Innenseiten — nie hinter Eingabefeldern. */
+const edgeArt = m => group(THEME[m].rand, {op:.2, size:70});
+
+/** Einzelnes Eckmotiv für Textseiten. */
+const cornerArt = m => `<span class="page-corner">${motif(THEME[m].ecke, {w:.85})}</span>`;
+
+
+
+/** Girlande für die beiden Buchdeckel.
+    Winkel, Motiv, Größe und Drehung stehen einzeln in der Liste — dadurch
+    entsteht keine sichtbare Wiederholung wie bei einer Modulo-Verteilung. */
+function garland(punkte, opt = {}){
+  const r = opt.r ?? 47;
+  const teile = punkte.map(([nm, deg, sc, rot]) => {
     const a = (deg - 90) * Math.PI / 180;
-    const x = Math.cos(a) * r, y = Math.sin(a) * r;
-    const nm = names[i % names.length];
-    const sc = .3 + (i % 3) * .045;
-    // non-scaling-stroke: die Linie bleibt fein, egal wie klein das Motiv skaliert ist
-    return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${deg.toFixed(0)}) scale(${sc})">
+    const x = (Math.cos(a) * r).toFixed(1), y = (Math.sin(a) * r).toFixed(1);
+    return `<g transform="translate(${x} ${y}) rotate(${deg + (rot || 0)}) scale(${sc})">
       <path d="${ART[nm].d}" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
       ${ART[nm].i ? `<path d="${ART[nm].i}" stroke-width="1" stroke-opacity=".75"
         vector-effect="non-scaling-stroke"/>` : ""}
     </g>`;
   }).join("");
   return `<svg viewBox="-58 -58 116 116" fill="none" stroke="currentColor"
-    stroke-linecap="round" stroke-linejoin="round" filter="url(#ink)" aria-hidden="true">${parts}</svg>`;
+    stroke-linecap="round" stroke-linejoin="round" filter="url(#ink)" aria-hidden="true">${teile}</svg>`;
 }
 
-/** Eckbordüre — zwei Zweige, die eine Ecke rahmen. */
-function corner(name, opt = {}){
-  return `<svg viewBox="-20 -20 40 40" fill="none" stroke="currentColor" stroke-width="1.7"
-    stroke-linecap="round" stroke-linejoin="round" filter="url(#ink)" aria-hidden="true"
-    style="${opt.style || ""}">
-    <g transform="rotate(${opt.rot ?? 0})">
-      <path d="${ART[name].d}"/>${ART[name].i ? `<path d="${ART[name].i}" stroke-width="1.15" stroke-opacity=".85"/>` : ""}
-    </g></svg>`;
-}
+/* Beide Girlanden sind von Hand gelegt: die Abstände sind bewusst ungleich,
+   unten dichter als oben, und die Lücke oben lässt den Titel frei atmen. */
+const KRANZ_START = [
+  ["daisy",34,.34,-8],["leafOak",52,.28,12],["bud",68,.3,-4],["daisy",86,.36,6],
+  ["leafMaple",104,.3,-14],["sparkle",118,.2,0],["leafOak",132,.32,8],["daisy",148,.3,-6],
+  ["bud",163,.26,10],["leafMaple",178,.34,0],["daisy",193,.28,-9],["leafOak",208,.31,14],
+  ["sparkle",222,.19,0],["bud",236,.29,-5],["daisy",252,.33,7],["leafMaple",270,.28,-12],
+  ["leafOak",290,.3,4],["daisy",310,.26,-7],["sparkle",326,.18,0]
+];
+const KRANZ_ENDE = [
+  ["pineBranch",36,.32,-10],["starFive",54,.22,0],["ornament",72,.3,6],["pineBranch",92,.34,-6],
+  ["sparkle",108,.19,0],["starFive",124,.24,0],["pineBranch",142,.31,9],["ornament",160,.28,-5],
+  ["starFive",176,.21,0],["pineBranch",196,.33,7],["sparkle",212,.18,0],["ornament",228,.29,-8],
+  ["pineBranch",248,.32,5],["starFive",266,.23,0],["pineBranch",288,.3,-9],["ornament",308,.27,4],
+  ["sparkle",324,.18,0]
+];
 
 /* --- Gezeichnete Linien & Rahmen ----------------------------- */
 
@@ -579,7 +631,7 @@ function sticker(id, opt = {}){
 /** Die zur Jahreszeit passenden Aufkleber zuerst. */
 function stickersFor(m){
   const t = THEME[m];
-  const nah = new Set([t.mood, ...t.deco.map(d => d[0])]);
+  const nah = new Set([t.mood, t.ecke, ...t.cover.map(d => d[0])]);
   return [...STICKERS].sort((a, b) => (nah.has(b.id) ? 1 : 0) - (nah.has(a.id) ? 1 : 0));
 }
 
@@ -601,7 +653,7 @@ const head = (title, sub) => `
 function pgCover(){
   return `<div class="cover" style="--accent:#7E7A4E">
     ${FRAME}
-    <div class="cover-wreath">${wreath(["daisy","leafOak","bud","sparkle","leafMaple"], {r:41, count:18, gap:true})}</div>
+    <div class="cover-wreath">${garland(KRANZ_START, {r:46})}</div>
     <div class="cover-inner">
       <p class="kicker">Ein Buch für dich</p>
       <div class="yr">2027</div>
@@ -693,7 +745,7 @@ function pgVision(){
       <span class="tape tl"></span>
       <p class="label" style="margin-bottom:3px">Jahresmotto</p>
       <input class="w plain" data-f="meta.motto" value="${esc(S.meta.motto)}"
-        style="font-size:24px;font-family:'Kaushan Script',cursive;color:#AE6A92">
+        style="font-size:24px;font-family:var(--f-display);color:#AE6A92">
     </div>`;
 }
 function pgGoals(){
@@ -725,44 +777,77 @@ function pgGoals(){
 
 /* --- Level 10 Life ------------------------------------------ */
 let l10sel = 0;
+/** Kleine, aber feste Unregelmäßigkeit — dieselbe Stelle wackelt immer gleich,
+    damit das Rad beim Neuzeichnen nicht zappelt. */
+function wobble(i, lv, amp = 2.6){
+  const h = Math.sin(i * 12.9898 + lv * 78.233) * 43758.5453;
+  return (h - Math.floor(h) - .5) * amp;
+}
+
 function wheelSVG(){
-  const N = S.level10.length, R = 128, cx = 0, cy = 0, step = 360 / N;
-  const pol = (r, a) => [r * Math.cos((a - 90) * Math.PI / 180), r * Math.sin((a - 90) * Math.PI / 180)];
-  let segs = "", grid = "", labels = "";
+  const N = S.level10.length, R = 128, step = 360 / N;
+  // Jeder Radius bekommt seinen eigenen kleinen Versatz: keine perfekten Kreise.
+  const pol = (r, a, i, lv) => {
+    const rr = r + wobble(i, lv);
+    const ar = (a - 90) * Math.PI / 180;
+    return [rr * Math.cos(ar), rr * Math.sin(ar)];
+  };
+  let segs = "", spokes = "", labels = "";
 
   for (let i = 0; i < N; i++){
     const a0 = i * step, a1 = a0 + step, c = PALETTE[i % PALETTE.length];
     for (let lv = 1; lv <= 10; lv++){
       const r0 = R * (lv - 1) / 10, r1 = R * lv / 10;
-      const [x0,y0] = pol(r0,a0), [x1,y1] = pol(r1,a0), [x2,y2] = pol(r1,a1), [x3,y3] = pol(r0,a1);
+      const [x0,y0] = pol(r0,a0,i,lv),   [x1,y1] = pol(r1,a0,i,lv+1);
+      const [x2,y2] = pol(r1,a1,i+1,lv), [x3,y3] = pol(r0,a1,i+1,lv-1);
       const on = S.level10[i].now >= lv;
-      const goalRing = S.level10[i].goal === lv;
-      segs += `<path class="seg" data-l10="${i}:${lv}" d="M${x0} ${y0}L${x1} ${y1}A${r1} ${r1} 0 0 1 ${x2} ${y2}L${x3} ${y3}A${r0} ${r0} 0 0 0 ${x0} ${y0}Z"
-        fill="${on ? c : "transparent"}" fill-opacity="${on ? (0.32 + lv * 0.055) : 0}"
-        stroke="${goalRing ? c : "currentColor"}" stroke-width="${goalRing ? 1.5 : .5}"
-        stroke-opacity="${goalRing ? .95 : .3}"
-        stroke-dasharray="${goalRing && !on ? "3 2.4" : "none"}"><title>${esc(S.level10[i].t)} – Stufe ${lv}</title></path>`;
+      const ziel = S.level10[i].goal === lv;
+      // Bogen leicht überzogen (sweep über die Ecke hinaus wirkt wie Buntstift)
+      segs += `<path class="seg" data-l10="${i}:${lv}"
+        d="M${x0.toFixed(1)} ${y0.toFixed(1)}L${x1.toFixed(1)} ${y1.toFixed(1)}
+           A${r1.toFixed(1)} ${(r1+wobble(i,lv,1.6)).toFixed(1)} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}
+           L${x3.toFixed(1)} ${y3.toFixed(1)}
+           A${r0.toFixed(1)} ${(r0+wobble(i,lv,1.2)).toFixed(1)} 0 0 0 ${x0.toFixed(1)} ${y0.toFixed(1)}Z"
+        fill="${on ? c : "transparent"}" fill-opacity="${on ? (0.3 + lv * 0.05) : 0}"
+        stroke="${ziel ? c : "currentColor"}" stroke-width="${ziel ? 1.7 : .55}"
+        stroke-opacity="${ziel ? .95 : .26}"
+        stroke-dasharray="${ziel && !on ? "4 3" : "none"}"
+        stroke-linejoin="round"><title>${esc(S.level10[i].t)} – Stufe ${lv}</title></path>`;
     }
-    const [lx,ly] = pol(R + 20, a0 + step / 2);
-    labels += `<text class="lbl" x="${lx}" y="${ly}" text-anchor="${Math.abs(lx) < 12 ? "middle" : (lx > 0 ? "start" : "end")}"
-      dominant-baseline="middle">${esc(S.level10[i].t)}</text>`;
-    const [gx,gy] = pol(R + 4, a0);
-    grid += `<line x1="0" y1="0" x2="${gx}" y2="${gy}" stroke="currentColor" stroke-opacity=".28" stroke-width=".7"/>`;
+    // Speiche als leicht krumme Handlinie statt gerader Achse
+    const [sx,sy] = pol(R + 5, a0, i, 11), [mx,my] = pol(R * .55, a0, i, 5);
+    spokes += `<path d="M0 0Q${mx.toFixed(1)} ${my.toFixed(1)} ${sx.toFixed(1)} ${sy.toFixed(1)}"
+      stroke="currentColor" stroke-opacity=".22" stroke-width=".7" fill="none"/>`;
+
+    const [lx,ly] = pol(R + 21, a0 + step / 2, i, 12);
+    labels += `<text class="lbl" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}"
+      text-anchor="${Math.abs(lx) < 12 ? "middle" : (lx > 0 ? "start" : "end")}"
+      dominant-baseline="middle" transform="rotate(${wobble(i,3,3).toFixed(1)} ${lx.toFixed(1)} ${ly.toFixed(1)})"
+      >${esc(S.level10[i].t)}</text>`;
   }
   const avg = (S.level10.reduce((a,b) => a + b.now, 0) / N).toFixed(1);
-  return `<svg class="wheel" viewBox="-176 -170 352 340" filter="url(#ink)" role="img"
-    aria-label="Level 10 Life Rad, Durchschnitt ${avg} von 10">
-    <g color="var(--ink-soft)">${segs}${grid}${labels}</g>
-    <circle r="16" fill="var(--paper)" stroke="currentColor" stroke-opacity=".3" stroke-width=".8"/>
-    <text class="val" y="1" text-anchor="middle" dominant-baseline="middle"
-      style="font-size:17px;fill:var(--ink)">${avg}</text>
+  return `<svg class="wheel" viewBox="-178 -172 356 344" filter="url(#ink)" role="img"
+    aria-label="Level 10 Life, Durchschnitt ${avg} von 10">
+    <g color="var(--ink-soft)">${segs}${spokes}${labels}</g>
+    <path d="M-15.6 1.2a15.6 14.8 0 1 1 31.2-2.4 15.2 15.6 0 1 1-31.2 2.4Z"
+      fill="var(--paper)" stroke="currentColor" stroke-opacity=".26" stroke-width=".9"/>
+    <text class="val" y="1.5" text-anchor="middle" dominant-baseline="middle">${avg}</text>
   </svg>`;
 }
+
 function pgL10wheel(){
-  return `${head("Level 10 Life", "Zehn Bereiche, ehrlich bewertet")}
+  const N = S.level10.length;
+  const avg = (S.level10.reduce((a,b) => a + b.now, 0) / N);
+  const luecke = S.level10.reduce((a,b) => a + (b.goal - b.now), 0);
+  const groesste = [...S.level10].sort((a,b) => (b.goal-b.now) - (a.goal-a.now))[0];
+  return `${head("Level 10 Life", "Zehn Bereiche, ehrlich angeschaut")}
     <div class="wheel-wrap">${wheelSVG()}</div>
-    <p class="micro" style="text-align:center;margin-top:4px">
-      Auf einen Ring tippen, um den Wert zu setzen · gestrichelt = dein Ziel</p>`;
+    <div class="wheel-note">
+      <p>Im Schnitt <b>${avg.toFixed(1)}</b> — bis zu deinen Zielen fehlen
+        noch <b>${luecke}</b> Stufen.</p>
+      <p class="hint">Der größte Sprung wartet bei <em>${esc(groesste.t)}</em>.
+        Auf einen Ring tippen setzt den Wert · gestrichelt ist dein Ziel.</p>
+    </div>`;
 }
 function pgL10list(){
   const rows = S.level10.map((l, i) => `
@@ -837,9 +922,9 @@ function pgMcover(m){
   const motto = S.monthMotto[mk] ?? M.motto;
   const v = S.vision.find(x => x.i === `m${m}`);
   const t = THEME[m];
-  return `<div class="mcover">
-    ${scene(m, {op:.26, size:74, only:2})}
-    <div class="mcover-wreath">${wreath(t.kranz, {r:41, count:15, gap:true})}</div>
+  // Die Kapitelfamilie steuert per Klasse Weißraum, Titelgröße und Deko-Präsenz.
+  return `<div class="mcover fam-${t.fam}">
+    ${coverArt(m)}
     <div class="mcover-inner">
       <p class="kicker">${YEAR} · ${t.thema}</p>
       <h2 class="mname">${M.n}</h2>
@@ -927,7 +1012,7 @@ function pgMside(m){
     </div>
 
     <div class="sec"><p class="label">Notizen</p>
-      <textarea class="w" data-f="mnote.${mk}" rows="4"
+      <textarea class="w" data-f="mnote.${mk}" rows="3"
         placeholder="Gedanken, Listen, was auch immer …">${esc(S.monthNote[mk] ?? "")}</textarea>
     </div>`;
 }
@@ -982,7 +1067,7 @@ function pgMoodKey(m){
     Object.entries(S.moods).filter(([k,v]) => k.startsWith(mk) && v === i).length);
   const total = counts.reduce((a,b) => a + b, 0);
   return `<div class="pagecol" style="position:relative">
-    <span class="page-corner">${motif(THEME[m].deco[0][0], {w:.85})}</span>
+    ${cornerArt(m)}
     <p class="label">Meine fünf Stimmungen</p>
     <p class="micro" style="margin-top:2px">Namen und Farben kannst du ändern.</p>
     <div class="mood-key" style="flex-direction:column;gap:7px;align-items:stretch">
@@ -1135,7 +1220,7 @@ function pgMemories(m){
       : `<button class="vslot" data-vis="${id}">${CAM_SVG}<span class="cap">Foto</span></button>`;
   }).join("");
   return `<div class="pagecol" style="position:relative">
-    <span class="page-corner">${motif(THEME[m].deco[0][0], {w:.85})}</span>
+    ${cornerArt(m)}
     <p class="label">Erinnerungen</p>
     <div class="vision" style="grid-template-columns:1fr 1fr;margin-top:8px">${slots}</div>
     <div class="sec"><p class="label">Aufkleber</p>
@@ -1154,7 +1239,9 @@ function pgMemories(m){
 /* --- Wochenansicht ------------------------------------------ */
 let weekIdx = {};
 function dayCard(m, d){
-  if (d === null) return `<div class="daycard" style="opacity:.25;pointer-events:none">
+  // Tage des Nachbarmonats: auf dem iPad halten sie die Woche in Form,
+  // auf dem Handy waeren sie nur zwei leere Karten — dort ausgeblendet.
+  if (d === null) return `<div class="daycard ghost" aria-hidden="true">
     <span class="micro">gehört zum Nachbarmonat</span></div>`;
   const k = key(m, d), dd = S.days[k], ev = S.events[k] || [], bd = bdOf(m, d);
   const mood = S.moods[k], we = wdOf(m, d) >= 5;
@@ -1190,7 +1277,8 @@ function pgWeekR(m){
   const ws = weeksOf(m);
   const wi = clamp(weekIdx[m] ?? 0, 0, ws.length - 1);
   const w = ws[wi], mk = `${mkey(m)}.w${wi}`;
-  return `<div class="daycards" style="margin-top:0">${w.slice(4).map(d => dayCard(m, d)).join("")}</div>
+  return `${edgeArt(m)}
+    <div class="daycards" style="margin-top:0">${w.slice(4).map(d => dayCard(m, d)).join("")}</div>
     <div class="box tint" style="margin-top:12px;position:relative">
       <span class="tape tl"></span>
       <p class="label" style="margin-bottom:3px">Notizen zur Woche</p>
@@ -1206,7 +1294,7 @@ function pgDayL(k){
   const [ , mm, ddn ] = k.split("-").map(Number);
   const m = mm - 1, d = ddn, dd = day(k), ev = S.events[k] || [], bd = bdOf(m, d);
   return `<div style="position:relative">
-    <span class="page-corner">${motif(THEME[m].deco[0][0], {w:.85})}</span>
+    ${cornerArt(m)}
     <div class="day-head">
       <span class="big num">${d}</span>
       <div style="padding-bottom:6px">
@@ -1348,7 +1436,7 @@ function pgYearNote(){
       <span class="tape tl"></span>
       <p class="label" style="margin-bottom:3px">Ein Wort für dieses Jahr</p>
       <input class="w plain" data-f="meta.motto" value="${esc(S.meta.motto)}"
-        style="font-size:26px;font-family:'Kaushan Script',cursive;color:var(--accent)">
+        style="font-size:26px;font-family:var(--f-display);color:var(--accent)">
     </div>
     <div class="box soft" style="margin-top:12px">
       <p class="label" style="margin-bottom:3px">Was ich mir für 2027 wünsche</p>
@@ -1361,7 +1449,7 @@ function pgYearNote(){
 function pgMonthEnd(m){
   const mk = mkey(m);
   return `<div class="pagecol" style="position:relative">
-    <span class="page-corner">${motif(THEME[m].deco[0][0], {w:.85})}</span>
+    ${cornerArt(m)}
     <p class="label">${MONTHS[m].n} — Rückblick</p>
     ${RULE}
     <div class="box soft" style="margin-top:10px">
@@ -1382,7 +1470,7 @@ function pgMonthEnd(m){
 function pgClosing(){
   return `<div class="cover" style="--accent:#4E6B55">
     ${FRAME}
-    <div class="cover-wreath">${wreath(["pineBranch","starFive","ornament","sparkle"], {r:41, count:16, gap:true})}</div>
+    <div class="cover-wreath">${garland(KRANZ_ENDE, {r:46})}</div>
     <div class="cover-inner">
       <p class="kicker">Das war</p>
       <div class="yr">2027</div>
@@ -1508,19 +1596,25 @@ function openDay(k){
   animateTurn(() => { dayView = k; }, false);
 }
 
-/** Klont die aufliegende Seite und klappt sie um die Bundsteg-Achse weg. */
+/** Klappt die aufliegende Seite um den Bundsteg weg.
+    Drei Ebenen arbeiten zusammen, damit es nach Papier aussieht:
+      · das Blatt selbst dreht sich
+      · ein Schatten wandert über die aufgeschlagene Seite darunter
+      · die Blattkante fängt kurz Licht, wenn das Blatt hochsteht
+    Kein 3D-Spektakel — die Bewegung soll glaubwürdig sein, nicht auffällig. */
 function animateTurn(mutate, back){
   endFlip();                       // eine noch laufende Umblätterung sauber beenden
   const flip = $("#flip"), src = back ? $(".page.left") : $(".page.right");
   const sheet = document.createElement("div");
-  sheet.className = "flip-sheet";
+  sheet.className = "flip-sheet " + (back ? "to-right" : "to-left");
   sheet.style.left = back ? "0" : "50%";
   sheet.style.transformOrigin = back ? "right center" : "left center";
-  sheet.innerHTML = `<div style="position:absolute;inset:0;padding:var(--page-pad) clamp(20px,3.4%,42px)">
-      ${src.querySelector(".page-inner").innerHTML}</div>
-    <div class="shade"></div>`;
-  // Interaktion auf dem Klon abschalten
-  sheet.querySelectorAll("input,textarea,button,select").forEach(el => el.setAttribute("tabindex","-1"));
+  sheet.innerHTML = `<div class="flip-face">${src.querySelector(".page-inner").innerHTML}</div>
+    <div class="shade"></div><div class="edge"></div>`;
+  // Der Klon ist reine Optik: nichts darin darf Fokus oder Klicks bekommen.
+  sheet.querySelectorAll("input,textarea,button,select,a").forEach(el => {
+    el.setAttribute("tabindex", "-1"); el.setAttribute("aria-hidden", "true");
+  });
   flip.appendChild(sheet);
   flip.classList.add("on");
 
@@ -1528,18 +1622,30 @@ function animateTurn(mutate, back){
   render();
 
   const dir = back ? 1 : -1;
-  const shade = sheet.querySelector(".shade");
-  const anim = sheet.animate(
-    [{transform:"rotateY(0deg)"}, {transform:`rotateY(${dir * 168}deg)`}],
-    {duration:520, easing:"cubic-bezier(.42,0,.3,1)", fill:"forwards"});
-  shade.animate(
-    [{background:`linear-gradient(to ${back ? "right" : "left"}, rgba(0,0,0,0), rgba(0,0,0,.02))`, opacity:0},
-     {background:`linear-gradient(to ${back ? "right" : "left"}, rgba(0,0,0,.02), rgba(0,0,0,.34))`, opacity:1, offset:.55},
-     {opacity:0}],
-    {duration:520, easing:"ease-in-out", fill:"forwards"});
+  const D = 560;
+  // Leichtes Anheben in der Mitte (translateZ) lässt das Blatt abheben,
+  // statt wie eine Karte um die Achse zu kippen.
+  const anim = sheet.animate([
+      {transform:"rotateY(0deg) translateZ(0px)"},
+      {transform:`rotateY(${dir * 88}deg) translateZ(14px)`, offset:.5},
+      {transform:`rotateY(${dir * 172}deg) translateZ(0px)`}
+    ], {duration:D, easing:"cubic-bezier(.36,.02,.28,1)", fill:"forwards"});
+
+  const seite = back ? "right" : "left";
+  sheet.querySelector(".shade").animate([
+      {background:`linear-gradient(to ${seite}, rgba(0,0,0,0), rgba(0,0,0,.03))`, opacity:.2},
+      {background:`linear-gradient(to ${seite}, rgba(0,0,0,.04), rgba(0,0,0,.4))`, opacity:1, offset:.52},
+      {opacity:0}
+    ], {duration:D, easing:"ease-in-out", fill:"forwards"});
+
+  // Papierkante: schmal, hell, nur solange das Blatt aufgestellt ist
+  sheet.querySelector(".edge").animate(
+      [{opacity:0}, {opacity:.85, offset:.45}, {opacity:.6, offset:.62}, {opacity:0}],
+      {duration:D, easing:"ease-out", fill:"forwards"});
+
   // Doppelt abgesichert: das Promise räumt normal auf, der Timer fängt Abbrüche ab.
   anim.finished.then(endFlip).catch(() => {});
-  flipTimer = setTimeout(endFlip, 640);
+  flipTimer = setTimeout(endFlip, D + 120);
 }
 
 function next(){

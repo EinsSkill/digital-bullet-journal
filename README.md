@@ -28,9 +28,19 @@ Das visuelle Design ist umgesetzt und alle Bereiche sind angelegt und bedienbar.
 Stimmungs-Legende · Gewohnheiten (messbar + Ja/Nein) · Top Songs · Erinnerungen · Wochenansicht.
 Jeder Tag im Kalender und in der Wochenansicht öffnet eine eigene Tagesseite.
 
-**Gestaltung:** Jeder Monat hat eine eigene Farbwelt und ein eigenes Moodtracker-Motiv
-(Januar Schneeflocken, Februar Herzen, Mai Blüten, November Teebeutel, Dezember Sterne …).
-Alle Illustrationen laufen durch einen SVG-Wackelfilter, damit keine Linie mathematisch glatt wirkt.
+**Gestaltung:** Fünf Kompositionsfamilien geben dem Buch seinen Rhythmus und sind auf die
+zwölf Monate verteilt — `still` (Jan, Feb: klar und leer, großer Titel), `ranke` (Mär–Mai:
+organisch aufsteigend), `offen` (Jun–Aug: Mitte bewusst frei), `dicht` (Sep–Nov: warm
+geschichtet), `fest` (Dez: gefasst und feierlich). Die Familie steuert Weißraum, Titelgröße und
+Präsenz der Deko — nicht die Farbe. Dadurch fühlt sich Januar anders an als Oktober, ohne dass
+das Buch auseinanderfällt.
+
+Die Deko-Positionen jedes Monats stehen einzeln in `THEME` (Abschnitt 5) und sind von Hand
+gelegt, nicht gerechnet. Auch die beiden Girlanden auf den Buchdeckeln haben ungleiche
+Abstände statt einer Modulo-Verteilung — dadurch entsteht kein sichtbares Wiederholungsmuster.
+
+Jeder Monat hat außerdem ein eigenes Moodtracker-Motiv samt eigener Anordnung
+(November hängt an Fäden wie Teebeutel, Juli wellt sich, Mai ist gestreut).
 
 **Funktioniert bereits:** Blättern mit 3D-Effekt, Lesezeichen, Register, Reiter, Wischgesten,
 Stimmung setzen, Gewohnheiten abhaken und messen, Ziele bearbeiten, Level-10-Werte setzen,
@@ -93,10 +103,15 @@ Für die Nutzerin sind Tabellen zu keinem Zeitpunkt sichtbar.
 
 ## Bekannte Grenzen
 
-- Der Blättern-Effekt klappt die Seite realistisch weg, biegt das Papier aber nicht.
+- Der Seitenwechsel hebt das Blatt an und zeigt seine Kante, **biegt das Papier aber nicht**.
+  Eine echte Wölbung bräuchte einen Canvas-Shader und würde auf dem iPad Leistung kosten.
+- Das Level-10-Rad ist bewusst unregelmäßig gezeichnet (jeder Radius hat seinen eigenen
+  kleinen Versatz), bleibt aber ein Rad — näher an einer Infografik als an einem Chart,
+  aber kein Freihand-Diagramm.
 - Fotos werden auf 640 px verkleinert im Browser gespeichert — bis zur Sheets-Anbindung
   liegen sie nur auf dem jeweiligen Gerät.
-- Alle Inhalte sind Beispieldaten (Platzhalter wie `[Name]`, erfundene Geburtstage und Songs).
+- Auf 1024 × 768 sind die Seiten dicht gesetzt; darunter greift das Einzelseiten-Layout.
+- Alle Inhalte sind Beispieldaten (Platzhalter `[Name]`, `[Motto]`, `[Persönliche Widmung]`).
 
 ## Nächste Schritte
 
