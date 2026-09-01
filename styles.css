@@ -17,7 +17,6 @@
   --lift-color:#ffffff;
   --lift:0%;
   --sink-color:#000000;
-  --sink:0%;
   --tape:rgba(214,197,160,.55);
   --focus:#3F7FA6;
   --ok:#6D8F5E;
@@ -38,7 +37,6 @@
   --noise:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23f)' opacity='.055'/%3E%3C/svg%3E");
   --radius-hand:255px 14px 225px 16px/16px 225px 14px 255px;
   --radius-hand2:14px 240px 18px 230px/230px 16px 240px 14px;
-  --book-w:min(1180px, 96vw);
   --page-pad:clamp(16px,2.4vh,30px);
 }
 @media (prefers-color-scheme: dark){
@@ -56,8 +54,7 @@
     --cloth:#3B463F;
     --cloth-deep:#2A332E;
     --lift:34%;
-    --sink:0%;
-    --tape:rgba(150,131,95,.34);
+      --tape:rgba(150,131,95,.34);
     --focus:#8FC2E0;
   }
 }
@@ -258,12 +255,16 @@ input,textarea,select{font:inherit;color:inherit}
    ============================================================ */
 .page{
   position:relative;overflow:hidden;
+  /* Monatsfarbe fuer FLAECHEN ist --accent; fuer TEXT auf Papier ist sie
+     bei hellen Monaten zu schwach (Januar 2.7:1). --accent-ink behaelt den
+     Farbton und mischt so viel Tinte dazu, dass Text traegt — in beiden
+     Themes, weil --ink jeweils die lesbare Farbe ist. */
+  --accent-ink:color-mix(in oklab, var(--accent), var(--ink) 40%);
   background:var(--paper);
   background-image:var(--dots),var(--noise);
   background-size:22px 22px,180px 180px;
   display:flex;flex-direction:column;
   --accent:var(--pencil);
-  --tint:var(--paper);
 }
 .page.left{border-radius:4px 0 0 4px}
 .page.right{border-radius:0 4px 4px 0}
@@ -500,9 +501,6 @@ input,textarea,select{font:inherit;color:inherit}
 /* ============================================================
    TYPE
    ============================================================ */
-.script{font-family:var(--f-display);font-weight:400;line-height:1.05;color:var(--accent-ink,var(--ink))}
-.hand{font-family:var(--f-print)}
-.ui{font-family:var(--f-ui)}
 h1,h2,h3{margin:0;font-weight:400;text-wrap:balance}
 .page-title{
   font-family:var(--f-display);
@@ -536,7 +534,6 @@ h1,h2,h3{margin:0;font-weight:400;text-wrap:balance}
   border-radius:var(--radius-hand);
   padding:12px 14px;background:color-mix(in oklab,var(--paper),var(--accent) 4%);
 }
-.box.alt{border-radius:var(--radius-hand2)}
 .box.dashed{border-style:dashed;border-width:1.6px}
 .box.soft{border-color:var(--rule);background:transparent}
 .tint{background:color-mix(in oklab,var(--paper),var(--accent) 12%)}
@@ -643,14 +640,17 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
    ILLUSTRATIONEN
    Deko liegt immer HINTER dem Inhalt und nimmt keine Klicks an.
    ============================================================ */
-.scene{position:absolute;inset:0;pointer-events:none;overflow:hidden;color:var(--accent);z-index:0}
+/* Deko nimmt die lesbare Mischung: bei hellen Monaten verschwand die
+   reine Akzentfarbe auf dem Papier fast vollstaendig. */
+.scene{position:absolute;inset:0;pointer-events:none;overflow:hidden;
+  color:var(--accent-ink);z-index:0}
 .deco{position:absolute;display:block;aspect-ratio:1;color:inherit}
 .deco svg{width:100%;height:100%;display:block;overflow:visible}
 .page-inner > *{position:relative;z-index:1}
 
 .page-corner{
   position:absolute;top:3%;right:5%;width:clamp(52px,7%,80px);aspect-ratio:1;
-  opacity:.42;pointer-events:none;z-index:0;
+  color:var(--accent-ink);opacity:.4;pointer-events:none;z-index:0;
 }
 .page-corner svg{width:100%;height:100%;overflow:visible}
 
@@ -662,12 +662,12 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 /* ============================================================
    DECKBLATT
    ============================================================ */
+/* Grundgeruest des Deckblatts. Farbe und Struktur stehen weiter oben
+   im Abschnitt DECKELPAPIER — hier nur Layout, sonst ueberschreibt diese
+   spaetere Regel die Leinenstruktur. */
 .cover{
   height:100%;position:relative;display:grid;place-items:center;
   padding:clamp(18px,4%,44px);text-align:center;
-  background:
-    radial-gradient(105% 78% at 50% 34%, color-mix(in oklab,var(--paper),var(--accent) 7%), transparent 70%),
-    var(--paper);
 }
 .cover-wreath{
   position:absolute;top:50%;left:50%;translate:-50% -52%;
@@ -686,8 +686,6 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .cover .yr{
   font-family:var(--f-display);
   font-size:clamp(68px,15.5vh,150px);line-height:.9;margin-top:.6vh;
-  color:color-mix(in oklab,var(--accent),var(--sink-color) 8%);
-  text-shadow:0 2px 0 color-mix(in oklab,var(--accent),transparent 82%);
 }
 .cover .for{
   font-family:var(--f-print);font-size:11px;letter-spacing:.26em;
@@ -729,7 +727,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 }
 .mname{
   font-family:var(--f-display);line-height:.95;margin-top:.4vh;
-  font-size:clamp(42px,9vh,84px);color:var(--accent);
+  font-size:clamp(42px,9vh,84px);color:var(--accent-ink);
 }
 .mcover .stroke{width:min(58%,230px);opacity:.75;margin-top:2px}
 .mmotto{
@@ -801,8 +799,8 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .mood-cell:hover,.mood-cell:focus-visible{scale:1.12}
 .mood-cell.void{opacity:.17;pointer-events:none}
 .mood-cell .mnum{
-  position:absolute;inset:auto 0 -13px 0;text-align:center;pointer-events:none;
-  font-family:var(--f-ui);font-size:9.5px;color:var(--pencil);
+  position:absolute;inset:auto 0 -14px 0;text-align:center;pointer-events:none;
+  font-family:var(--f-ui);font-size:11px;color:var(--ink-soft);
 }
 .mood-cell.set .mnum{color:var(--ink-soft)}
 .mood-cell .fillp{transition:fill .3s ease,fill-opacity .3s ease}
@@ -936,7 +934,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .toc-row:hover{background:color-mix(in oklab,var(--paper),var(--accent) 10%)}
 .toc-row .t{font-size:clamp(17px,2.3vh,20px);white-space:nowrap}
 .toc-row .dots{flex:1;border-bottom:1.5px dotted var(--rule);transform:translateY(-4px)}
-.toc-row .p{font-family:var(--f-ui);font-size:11px;color:var(--pencil)}
+.toc-row .p{font-family:var(--f-ui);font-size:11px;color:var(--ink-soft)}
 .toc-row .sw{width:11px;height:11px;border-radius:3px 6px 3px 6px;flex:0 0 auto;transform:translateY(1px)}
 .toc-group{margin-top:clamp(8px,1.7vh,16px)}
 .toc-group > .label{padding-left:6px}
@@ -950,9 +948,9 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
   border:1.5px solid transparent;transition:border-color .15s,background .15s,transform .15s cubic-bezier(.22,1,.36,1);
 }
 .mini:hover{border-color:var(--mc);background:color-mix(in oklab,var(--paper),var(--mc) 8%);transform:translateY(-2px)}
-.mini h4{font-family:var(--f-display);font-size:16.5px;color:var(--mc);margin-bottom:3px}
+.mini h4{font-family:var(--f-display);font-size:16.5px;color:var(--mc-ink,var(--mc));margin-bottom:3px}
 .mini table{width:100%;border-collapse:collapse;font-family:var(--f-hand);font-size:11.5px;line-height:1}
-.mini th{font-family:var(--f-ui);font-size:7.5px;font-weight:600;color:var(--pencil);padding-bottom:2px;letter-spacing:.02em}
+.mini th{font-family:var(--f-ui);font-size:8.5px;font-weight:600;color:var(--ink-soft);padding-bottom:2px;letter-spacing:.02em}
 .mini td{text-align:center;padding:1.2px 0;color:var(--ink-soft);position:relative}
 .mini td.we{color:var(--pencil)}
 .mini td.has::after{content:"";position:absolute;left:50%;bottom:-.5px;width:3px;height:3px;border-radius:50%;background:var(--mc);transform:translateX(-50%)}
@@ -968,20 +966,20 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .cal td{border:1.2px dotted var(--rule);padding:0;vertical-align:top;height:1px}
 .cal td.out{background:color-mix(in oklab,var(--paper),var(--pencil) 6%);border-style:solid;border-color:transparent}
 .cal .cell{
-  width:100%;height:100%;min-height:clamp(40px,7.2vh,66px);text-align:left;
+  width:100%;height:100%;min-height:clamp(44px,9vh,84px);text-align:left;
   padding:3px 5px;display:flex;flex-direction:column;gap:2px;
   transition:background .14s;
 }
 .cal .cell:hover{background:color-mix(in oklab,var(--paper),var(--accent) 12%)}
 .cal .d{font-family:var(--f-hand);font-weight:600;font-size:16px;color:var(--ink-soft);line-height:1}
 .cal .cell.today .d{
-  color:#fff;background:var(--accent);width:21px;height:21px;border-radius:50%;
+  color:var(--accent-fg,#fff);background:var(--accent);width:21px;height:21px;border-radius:50%;
   display:grid;place-items:center;font-size:13.5px;margin:-1px 0 1px -2px;
 }
 .cal .ev{font-size:13px;line-height:1.15;color:var(--ink);
   overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
   border-left:2.4px solid var(--accent);padding-left:4px;}
-.cal .bday{font-family:var(--f-ui);font-size:9px;color:var(--accent);letter-spacing:.02em}
+.cal .bday{font-family:var(--f-ui);font-size:10.5px;color:var(--accent-ink);letter-spacing:.02em}
 .cal .mk{display:flex;gap:2px;margin-top:auto}
 .cal .mk i{width:5px;height:5px;border-radius:50%;display:block}
 
@@ -1007,7 +1005,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .habit-head{display:flex;align-items:center;gap:8px;margin-bottom:5px}
 .habit-head .hn{font-family:var(--f-print);font-size:13.5px;letter-spacing:.05em;flex:1;min-width:0;
   text-overflow:ellipsis;overflow:hidden;white-space:nowrap}
-.habit-head .goal{font-family:var(--f-ui);font-size:10px;color:var(--pencil);white-space:nowrap}
+.habit-head .goal{font-family:var(--f-ui);font-size:11.5px;color:var(--ink-soft);white-space:nowrap}
 .habit-head .dotc{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
 .habit-head .tools{display:flex;gap:1px;opacity:0;transition:opacity .15s}
 .habit:hover .habit-head .tools,.habit:focus-within .habit-head .tools{opacity:1}
@@ -1034,7 +1032,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
   letter-spacing:.08em;color:color-mix(in oklab,var(--hc),var(--ink-soft) 45%);
   pointer-events:none;padding-bottom:1px;
 }
-.bar-axis{display:flex;justify-content:space-between;font-family:var(--f-ui);font-size:8.5px;color:var(--pencil);margin-top:2px}
+.bar-axis{display:flex;justify-content:space-between;font-family:var(--f-ui);font-size:10px;color:var(--ink-soft);margin-top:3px}
 
 /* Ja/Nein: zwei Reihen zu je 16 Feldern statt 31 Streichholzspalten.
    Dadurch werden die Felder groß genug zum Antippen. */
@@ -1060,7 +1058,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 /* Jedes fünfte Feld trägt seine Tageszahl — das reicht zur Orientierung. */
 .ticks button::after{
   content:attr(data-d);position:absolute;bottom:-11px;left:0;right:0;text-align:center;
-  font-family:var(--f-ui);font-size:8px;color:var(--pencil);pointer-events:none;
+  font-family:var(--f-ui);font-size:9.5px;color:var(--ink-soft);pointer-events:none;
 }
 .ticks button:not(.mark5)::after{content:""}
 .ticks{row-gap:16px}
@@ -1083,7 +1081,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .song:hover{background:color-mix(in oklab,var(--paper),var(--accent) 7%);translate:5px 0}
 .song .rank{
   font-family:var(--f-display);font-size:29px;line-height:1;
-  color:var(--accent);width:32px;text-align:center;flex:0 0 auto;opacity:.85;
+  color:var(--accent-ink);width:32px;text-align:center;flex:0 0 auto;opacity:.9;
 }
 .song .cov{
   width:48px;height:48px;flex:0 0 auto;overflow:hidden;position:relative;
@@ -1110,7 +1108,8 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .count-toggle{display:flex;gap:4px;align-items:center}
 .count-toggle button{font-family:var(--f-ui);font-size:10.5px;padding:3px 9px;border-radius:99px;
   border:1.4px solid var(--rule);color:var(--pencil)}
-.count-toggle button[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.count-toggle button[aria-pressed="true"]{background:var(--accent);
+  color:var(--accent-fg,#fff);border-color:var(--accent)}
 
 /* ============================================================
    LEVEL 10
@@ -1126,8 +1125,8 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .wheel-note{margin-top:clamp(4px,1.2vh,12px);text-align:center}
 .wheel-note p{margin:0;font-size:clamp(15px,2vh,18px);color:var(--ink-soft);line-height:1.45}
 .wheel-note b{font-family:var(--f-display);font-weight:400;
-  font-size:1.25em;color:var(--accent)}
-.wheel-note em{font-style:normal;color:var(--accent)}
+  font-size:1.25em;color:var(--accent-ink)}
+.wheel-note em{font-style:normal;color:var(--accent-ink)}
 .wheel-note .hint{margin-top:3px}
 .l10-list{display:flex;flex-direction:column;gap:clamp(1px,.35vh,5px);margin-top:clamp(6px,1.2vh,12px)}
 .l10-row{
@@ -1141,7 +1140,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .l10-row .nm{font-size:clamp(16px,2.1vh,18px);text-align:left}
 .l10-row .nm .w{font-size:18px}
 .l10-score{display:flex;align-items:center;gap:3px;font-family:var(--f-ui);font-size:11px;color:var(--ink-soft)}
-.l10-score b{font-family:var(--f-display);font-size:19px;font-weight:400;color:var(--lc)}
+.l10-score b{font-family:var(--f-display);font-size:19px;font-weight:400;color:color-mix(in oklab,var(--lc),var(--ink) 34%)}
 .l10-detail{margin-top:clamp(6px,1.1vh,10px)}
 .stepper{display:inline-flex;align-items:center;gap:0;border:1.5px solid var(--rule);border-radius:99px;overflow:hidden}
 .stepper button{width:22px;height:22px;display:grid;place-items:center;color:var(--ink-soft);font-family:var(--f-ui);font-size:13px}
@@ -1172,7 +1171,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .vslot:hover{border-color:var(--accent);color:var(--accent);background:color-mix(in oklab,var(--paper),var(--accent) 9%)}
 .vslot.filled{border-style:solid;padding:4px;background:var(--paper)}
 .vslot img{width:100%;height:100%;object-fit:cover;border-radius:4px;display:block}
-.vslot .cap{position:absolute;left:0;right:0;bottom:0;font-family:var(--f-print);font-size:10px;
+.vslot .cap{position:absolute;left:0;right:0;bottom:0;font-family:var(--f-print);font-size:11.5px;
   background:color-mix(in oklab,var(--paper),transparent 12%);color:var(--ink-soft);padding:2px 5px;text-align:center}
 .vslot .rm{position:absolute;top:3px;right:3px;width:19px;height:19px;border-radius:50%;
   background:var(--paper);border:1.3px solid var(--rule);display:grid;place-items:center;opacity:0;transition:opacity .15s}
@@ -1192,11 +1191,11 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
   transition:clip-path .42s cubic-bezier(.22,1,.36,1);
   background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.22) 0 4px,transparent 4px 8px)}
 .prog-row{display:flex;align-items:center;gap:9px;margin-top:6px}
-.prog-row .pct{font-family:var(--f-display);font-size:19px;color:var(--accent);min-width:44px;text-align:right}
+.prog-row .pct{font-family:var(--f-display);font-size:19px;color:var(--accent-ink);min-width:44px;text-align:right}
 .steps{margin-top:7px;display:flex;flex-direction:column;gap:3px}
 .step{display:flex;align-items:flex-start;gap:7px;font-size:17px}
 .step.done{color:var(--pencil);text-decoration:line-through;text-decoration-thickness:1.2px}
-.linkchip{display:inline-flex;align-items:center;gap:4px;font-family:var(--f-ui);font-size:10px;
+.linkchip{display:inline-flex;align-items:center;gap:4px;font-family:var(--f-ui);font-size:11.5px;
   color:var(--ink-soft);border:1.3px dashed var(--rule);border-radius:99px;padding:2px 8px}
 
 /* ============================================================
@@ -1206,7 +1205,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .bd-cols{columns:2;column-gap:clamp(12px,3%,26px)}
 .bd-cols .bd-month{break-inside:avoid;-webkit-column-break-inside:avoid}
 .bd-month{margin-bottom:clamp(4px,1vh,11px);break-inside:avoid}
-.bd-month h4{font-family:var(--f-display);font-size:19px;color:var(--mc);display:flex;align-items:center;gap:7px}
+.bd-month h4{font-family:var(--f-display);font-size:19px;color:var(--mc-ink,var(--mc));display:flex;align-items:center;gap:7px}
 .bd-month h4::after{content:"";flex:1;height:1.4px;background:var(--rule)}
 .bd-row{display:flex;align-items:baseline;gap:8px;padding:2px 2px 2px 6px;border-radius:5px}
 .bd-row:hover{background:color-mix(in oklab,var(--paper),var(--mc) 9%)}
@@ -1222,7 +1221,8 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .week-nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}
 .week-nav button{font-family:var(--f-ui);font-size:10.5px;border:1.4px solid var(--rule);
   border-radius:99px;padding:3px 10px;color:var(--pencil)}
-.week-nav button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.week-nav button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);
+  color:var(--accent-fg,#fff)}
 .daycards{display:flex;flex-direction:column;gap:8px;margin-top:11px}
 .daycard{
   position:relative;text-align:left;width:100%;padding:8px 10px 9px;
@@ -1237,7 +1237,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 /* Nachbarmonatstage: dezent auf dem iPad, ganz weg auf dem Handy */
 .daycard.ghost{opacity:.22;pointer-events:none}
 .daycard .dh{display:flex;align-items:baseline;gap:7px}
-.daycard .dw{font-family:var(--f-print);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.daycard .dw{font-family:var(--f-print);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-ink)}
 .daycard .dn{font-family:var(--f-display);font-size:21px;color:var(--ink-soft);line-height:1}
 .daycard .mini-mood{margin-left:auto;display:flex;align-items:center;gap:4px}
 .daycard .mini-mood i{width:11px;height:11px;border-radius:4px 7px 4px 7px;display:block}
@@ -1252,14 +1252,14 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
    DAY DETAIL
    ============================================================ */
 .day-head{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
-.day-head .big{font-family:var(--f-display);font-size:clamp(44px,7vh,72px);line-height:.85;color:var(--accent)}
+.day-head .big{font-family:var(--f-display);font-size:clamp(44px,7vh,72px);line-height:.85;color:var(--accent-ink)}
 .day-head .wd{font-family:var(--f-print);font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-soft)}
 .sec{margin-top:clamp(7px,1.5vh,14px)}
 .sec > .label{display:flex;align-items:center;gap:8px;margin-bottom:5px}
 .sec > .label::after{content:"";flex:1;height:1.3px;background:var(--rule)}
 .grat{display:flex;flex-direction:column;gap:4px}
 .grat .g{display:flex;align-items:center;gap:8px}
-.grat .n{font-family:var(--f-display);font-size:17px;color:var(--accent);width:15px;flex:0 0 auto}
+.grat .n{font-family:var(--f-display);font-size:17px;color:var(--accent-ink);width:15px;flex:0 0 auto}
 .todos{display:flex;flex-direction:column;gap:3px}
 .todo{display:flex;align-items:center;gap:8px}
 .todo.done .w{color:var(--pencil);text-decoration:line-through;text-decoration-thickness:1.2px}
@@ -1268,9 +1268,9 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
   display:grid;place-items:center;font-family:var(--f-ui);font-size:11px;color:var(--pencil);
   transition:transform .18s cubic-bezier(.22,1,.36,1)}
 .scale button:hover{transform:scale(1.12);border-color:var(--accent)}
-.scale button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.scale button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);
+  color:var(--accent-fg,#fff)}
 /* Fotos, Aufkleber und Klebeband sind oben im Illustrations-Block definiert. */
-.day-photo{width:100%}
 
 /* ============================================================
    MONTH TABS (inside a month)
@@ -1282,7 +1282,8 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
   transition:background .15s,border-color .15s,color .15s;
 }
 .mtab:hover{border-color:var(--accent);color:var(--accent)}
-.mtab[aria-current="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.mtab[aria-current="true"]{background:var(--accent);border-color:var(--accent);
+  color:var(--accent-fg,#fff)}
 
 /* ============================================================
    MODAL
