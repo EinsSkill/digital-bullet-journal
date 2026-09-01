@@ -23,6 +23,16 @@
   --ok:#6D8F5E;
   --warn:#C08A3E;
   --fs-micro:11px;
+  /* Vier Schriftrollen. Die Fallbacks sind bewusst gewaehlt: faellt Google
+     Fonts aus, bleibt der handgeschriebene Charakter erhalten statt auf
+     Comic Sans zu kippen, das die meisten Systeme hinter "cursive" liefern. */
+  --f-display:"Kaushan Script","Brush Script MT","Segoe Script","Bradley Hand",
+    "Snell Roundhand",cursive;
+  --f-print:"Architects Daughter","Segoe Print","Bradley Hand","Chalkboard SE",
+    "Trebuchet MS",sans-serif;
+  --f-hand:"Caveat","Segoe Script","Bradley Hand","Snell Roundhand",
+    "Segoe Print",cursive;
+  --f-ui:"Karla",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   /* paper textures: dot grid + fibre noise, both inline so nothing loads off-host */
   --dots:radial-gradient(circle at 1px 1px, var(--dot) .9px, transparent 1.1px);
   --noise:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23f)' opacity='.055'/%3E%3C/svg%3E");
@@ -75,7 +85,7 @@ body{
   margin:0;
   background:var(--paper-deep);
   color:var(--ink);
-  font-family:"Caveat","Segoe Script",cursive;
+  font-family:var(--f-hand);
   font-size:19px;
   -webkit-tap-highlight-color:transparent;
   overflow:hidden;
@@ -159,7 +169,7 @@ input,textarea,select{font:inherit;color:inherit}
 .page-inner::-webkit-scrollbar-thumb{background:var(--pencil);border-radius:99px}
 .folio{
   position:absolute;bottom:10px;z-index:5;
-  font-family:"Karla",system-ui,sans-serif;font-size:10px;letter-spacing:.16em;
+  font-family:var(--f-ui);font-size:10px;letter-spacing:.16em;
   color:var(--pencil);text-transform:uppercase;
 }
 .page.left .folio{left:26px}
@@ -177,7 +187,24 @@ input,textarea,select{font:inherit;color:inherit}
   overflow:hidden;
   box-shadow:0 0 34px -6px var(--shadow-strong);
 }
-.flip-sheet .shade{position:absolute;inset:0;pointer-events:none}
+.flip-sheet .flip-face{
+  position:absolute;inset:0;
+  padding:var(--page-pad) clamp(20px,3.4%,42px);
+  overflow:hidden;
+}
+.flip-sheet.to-left .flip-face{padding-left:clamp(26px,4.6%,54px)}
+.flip-sheet.to-right .flip-face{padding-right:clamp(26px,4.6%,54px)}
+.flip-sheet .shade{position:absolute;inset:0;pointer-events:none;z-index:2}
+/* Papierkante: die schmale helle Flaeche, die man sieht, wenn das Blatt steht */
+.flip-sheet .edge{
+  position:absolute;top:0;bottom:0;width:3px;pointer-events:none;z-index:3;opacity:0;
+  background:linear-gradient(to bottom,
+    color-mix(in oklab,var(--paper),#fff 40%),
+    var(--paper-edge) 45%,
+    color-mix(in oklab,var(--paper),#fff 25%));
+}
+.flip-sheet.to-left .edge{right:0}
+.flip-sheet.to-right .edge{left:0}
 
 /* ============================================================
    BOOKMARKS (right edge registers)
@@ -197,7 +224,7 @@ input,textarea,select{font:inherit;color:inherit}
   width:32px;
 }
 .mark span{
-  font-family:"Karla",system-ui,sans-serif;font-weight:600;
+  font-family:var(--f-ui);font-weight:600;
   font-size:9.5px;letter-spacing:.06em;color:var(--mfg,#fff);
   writing-mode:vertical-rl;text-transform:uppercase;
   text-shadow:none;
@@ -226,35 +253,35 @@ input,textarea,select{font:inherit;color:inherit}
   transition:transform .18s ease;
 }
 .ytab span{writing-mode:vertical-rl;transform:rotate(180deg);
-  font-family:"Karla",sans-serif;font-size:9px;letter-spacing:.1em;color:#EFE7D6;text-transform:uppercase;font-weight:600}
+  font-family:var(--f-ui);font-size:9px;letter-spacing:.1em;color:#EFE7D6;text-transform:uppercase;font-weight:600}
 .ytab:hover,.ytab:focus-visible,.ytab[aria-current="true"]{transform:translateX(0);background:var(--cloth-deep)}
 
 /* ============================================================
    TYPE
    ============================================================ */
-.script{font-family:"Kaushan Script",cursive;font-weight:400;line-height:1.05;color:var(--accent-ink,var(--ink))}
-.hand{font-family:"Architects Daughter",cursive}
-.ui{font-family:"Karla",system-ui,sans-serif}
+.script{font-family:var(--f-display);font-weight:400;line-height:1.05;color:var(--accent-ink,var(--ink))}
+.hand{font-family:var(--f-print)}
+.ui{font-family:var(--f-ui)}
 h1,h2,h3{margin:0;font-weight:400;text-wrap:balance}
 .page-title{
-  font-family:"Kaushan Script",cursive;
+  font-family:var(--f-display);
   font-size:clamp(30px,4.4vh,48px);line-height:1;
   color:color-mix(in oklab,var(--accent),var(--sink-color) 14%);
   filter:drop-shadow(0 1px 0 color-mix(in oklab,var(--accent),transparent 78%));
 }
 .page-sub{
-  font-family:"Architects Daughter",cursive;font-size:12.5px;letter-spacing:.2em;
+  font-family:var(--f-print);font-size:12.5px;letter-spacing:.2em;
   text-transform:uppercase;color:var(--ink-soft);margin-top:6px;
 }
 .label{
-  font-family:"Architects Daughter",cursive;font-size:12px;letter-spacing:.14em;
+  font-family:var(--f-print);font-size:12px;letter-spacing:.14em;
   text-transform:uppercase;color:var(--ink-soft);
 }
 
 /* Hinweistexte: klein, aber lesbar — nicht auf Bleistiftgrau setzen. */
-.hint{font-family:"Architects Daughter",cursive;font-size:11.5px;letter-spacing:.04em;
+.hint{font-family:var(--f-print);font-size:11.5px;letter-spacing:.04em;
   color:var(--ink-soft);margin-top:10px;opacity:.9}
-.micro{font-family:"Karla",sans-serif;font-size:var(--fs-micro);letter-spacing:.08em;color:var(--pencil)}
+.micro{font-family:var(--f-ui);font-size:var(--fs-micro);letter-spacing:.08em;color:var(--pencil)}
 .num{font-variant-numeric:tabular-nums}
 
 /* underline stroke under titles */
@@ -278,7 +305,7 @@ h1,h2,h3{margin:0;font-weight:400;text-wrap:balance}
    CONTROLS
    ============================================================ */
 .btn{
-  font-family:"Architects Daughter",cursive;font-size:14px;letter-spacing:.06em;
+  font-family:var(--f-print);font-size:14px;letter-spacing:.06em;
   border:1.7px solid var(--accent);border-radius:var(--radius-hand);
   padding:7px 16px;color:color-mix(in oklab,var(--accent),var(--sink-color) 20%);
   background:color-mix(in oklab,var(--paper),var(--accent) 6%);
@@ -289,7 +316,7 @@ h1,h2,h3{margin:0;font-weight:400;text-wrap:balance}
 .btn.ghost{border-style:dashed;background:transparent;color:var(--ink-soft)}
 .btn.sm{font-size:12px;padding:4px 11px}
 .chip{
-  font-family:"Karla",sans-serif;font-size:11px;font-weight:600;letter-spacing:.05em;
+  font-family:var(--f-ui);font-size:11px;font-weight:600;letter-spacing:.05em;
   padding:3px 9px;border-radius:99px;border:1.4px solid currentColor;
 }
 .icon-btn{width:26px;height:26px;display:grid;place-items:center;border-radius:50%;color:var(--pencil)}
@@ -297,7 +324,7 @@ h1,h2,h3{margin:0;font-weight:400;text-wrap:balance}
 
 /* editable fields — look like writing on the line, not like inputs */
 .w{
-  font-family:"Caveat",cursive;font-size:inherit;color:var(--ink);
+  font-family:var(--f-hand);font-size:inherit;color:var(--ink);
   background:transparent;border:none;border-bottom:1.6px dotted var(--rule);
   padding:1px 3px;width:100%;min-width:20px;transition:border-color .15s,background .15s;
 }
@@ -324,7 +351,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 #toast{
   position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);
   z-index:200;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;
-  font-family:"Architects Daughter",cursive;font-size:13.5px;
+  font-family:var(--f-print);font-size:13.5px;
   background:var(--paper);color:var(--ink);border:1.7px solid var(--rule);
   border-radius:var(--radius-hand);padding:7px 16px;
   box-shadow:0 8px 22px -10px var(--shadow-strong);
@@ -334,7 +361,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 #sync{
   position:fixed;left:14px;bottom:12px;z-index:60;
   display:flex;align-items:center;gap:7px;
-  font-family:"Karla",sans-serif;font-size:11px;color:var(--pencil);letter-spacing:.03em;
+  font-family:var(--f-ui);font-size:11px;color:var(--pencil);letter-spacing:.03em;
 }
 #sync .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px color-mix(in oklab,var(--ok),transparent 80%)}
 #sync.pending .dot{background:var(--warn);box-shadow:0 0 0 3px color-mix(in oklab,var(--warn),transparent 80%)}
@@ -342,7 +369,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 /* corner controls */
 #corner{position:fixed;right:14px;bottom:12px;z-index:60;display:flex;gap:8px;align-items:center}
 #corner button{
-  font-family:"Karla",sans-serif;font-size:11px;letter-spacing:.06em;color:var(--pencil);
+  font-family:var(--f-ui);font-size:11px;letter-spacing:.06em;color:var(--pencil);
   border:1.4px solid var(--rule);border-radius:99px;padding:4px 11px;background:var(--paper);
 }
 #corner button:hover{color:var(--ink);border-color:var(--pencil)}
@@ -421,22 +448,22 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
   gap:0;width:min(76%,34ch);
 }
 .cover .kicker{
-  font-family:"Architects Daughter",cursive;letter-spacing:.4em;text-transform:uppercase;
+  font-family:var(--f-print);letter-spacing:.4em;text-transform:uppercase;
   font-size:clamp(10px,1.4vh,12.5px);color:var(--ink-soft);padding-left:.4em;
 }
 .cover .yr{
-  font-family:"Kaushan Script",cursive;
+  font-family:var(--f-display);
   font-size:clamp(68px,15.5vh,150px);line-height:.9;margin-top:.6vh;
   color:color-mix(in oklab,var(--accent),var(--sink-color) 8%);
   text-shadow:0 2px 0 color-mix(in oklab,var(--accent),transparent 82%);
 }
 .cover .for{
-  font-family:"Architects Daughter",cursive;font-size:11px;letter-spacing:.26em;
+  font-family:var(--f-print);font-size:11px;letter-spacing:.26em;
   text-transform:uppercase;color:var(--pencil);margin-top:2.2vh;
 }
 .cover .who{width:min(100%,20ch);margin-top:.2vh}
 .cover .who .w{
-  font-family:"Kaushan Script",cursive;font-size:clamp(25px,4.2vh,40px);
+  font-family:var(--f-display);font-size:clamp(25px,4.2vh,40px);
   text-align:center;color:var(--ink);border-bottom-style:dotted;
 }
 .cover .motto{width:min(100%,30ch);margin-top:2.4vh}
@@ -460,22 +487,16 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
   height:100%;position:relative;display:grid;place-items:center;
   padding:clamp(14px,3%,32px);text-align:center;
 }
-.mcover-wreath{
-  position:absolute;top:50%;left:50%;translate:-50% -50%;
-  width:min(96%,min(620px,90vh));aspect-ratio:1;
-  color:var(--accent);opacity:.34;pointer-events:none;z-index:0;
-}
-.mcover-wreath svg{width:100%;height:100%;overflow:visible}
 .mcover-inner{
   position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;
   width:min(80%,32ch);
 }
 .mcover .kicker{
-  font-family:"Architects Daughter",cursive;letter-spacing:.28em;text-transform:uppercase;
+  font-family:var(--f-print);letter-spacing:.28em;text-transform:uppercase;
   font-size:clamp(9.5px,1.3vh,11.5px);color:var(--ink-soft);padding-left:.28em;
 }
 .mname{
-  font-family:"Kaushan Script",cursive;line-height:.95;margin-top:.4vh;
+  font-family:var(--f-display);line-height:.95;margin-top:.4vh;
   font-size:clamp(42px,9vh,84px);color:var(--accent);
 }
 .mcover .stroke{width:min(58%,230px);opacity:.75;margin-top:2px}
@@ -485,6 +506,48 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 }
 .mphoto{width:min(62%,210px);margin-top:2.4vh;flex:0 0 auto}
 .mcover-go{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:2.4vh}
+
+
+/* ============================================================
+   KAPITELFAMILIEN
+   Fünf Grundhaltungen geben dem Buch Rhythmus. Sie verändern
+   Weißraum, Titelgröße und Präsenz der Deko — nicht die Farbe.
+   Dadurch fühlt sich Januar anders an als Oktober, ohne dass
+   das Buch auseinanderfällt.
+   ============================================================ */
+
+/* still — Winteranfang: großer Titel, viel Luft, zurückhaltende Deko */
+.mcover.fam-still .mcover-inner{width:min(72%,28ch)}
+.mcover.fam-still .mname{font-size:clamp(46px,10.5vh,96px);letter-spacing:-.01em}
+.mcover.fam-still .scene{opacity:.34}
+.mcover.fam-still .mmotto{margin-top:2.6vh}
+.mcover.fam-still .mphoto{margin-top:3.4vh}
+
+/* ranke — Frühling: Titel etwas kleiner, Deko wächst von unten links auf */
+.mcover.fam-ranke .mcover-inner{width:min(78%,31ch);translate:4% 0}
+.mcover.fam-ranke .mname{font-size:clamp(40px,8.6vh,76px)}
+.mcover.fam-ranke .scene{opacity:.46}
+.mcover.fam-ranke .kicker{letter-spacing:.22em}
+
+/* offen — Sommer: Mitte bleibt frei, Deko nur am Rand, weite Abstände */
+.mcover.fam-offen .mcover-inner{width:min(70%,27ch)}
+.mcover.fam-offen .mname{font-size:clamp(46px,10.5vh,94px)}
+.mcover.fam-offen .scene{opacity:.4}
+.mcover.fam-offen .mmotto{margin-top:3vh}
+.mcover.fam-offen .mphoto{margin-top:3.8vh}
+
+/* dicht — Herbst: enger gesetzt, mehr Ebenen, wärmere Fülle */
+.mcover.fam-dicht .mcover-inner{width:min(82%,33ch)}
+.mcover.fam-dicht .mname{font-size:clamp(38px,8.2vh,72px)}
+.mcover.fam-dicht .scene{opacity:.5}
+.mcover.fam-dicht .mmotto{margin-top:1.6vh}
+.mcover.fam-dicht .mphoto{margin-top:2vh}
+
+/* fest — Dezember: gefasst, symmetrisch, feierlich ruhig */
+.mcover.fam-fest .mcover-inner{width:min(74%,29ch)}
+.mcover.fam-fest .mname{font-size:clamp(44px,9.8vh,88px)}
+.mcover.fam-fest .scene{opacity:.44}
+.mcover.fam-fest .mphoto{margin-top:2.8vh}
 
 /* ============================================================
    MOODTRACKER — Motiv und Anordnung wechseln je Monat
@@ -507,7 +570,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .mood-cell.void{opacity:.17;pointer-events:none}
 .mood-cell .mnum{
   position:absolute;inset:auto 0 -13px 0;text-align:center;pointer-events:none;
-  font-family:"Karla",sans-serif;font-size:9.5px;color:var(--pencil);
+  font-family:var(--f-ui);font-size:9.5px;color:var(--pencil);
 }
 .mood-cell.set .mnum{color:var(--ink-soft)}
 .mood-cell .fillp{transition:fill .3s ease,fill-opacity .3s ease}
@@ -535,6 +598,18 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 }
 .mood-bar span{transition:flex .4s cubic-bezier(.22,1,.36,1)}
 
+
+/* Die Monatsziel-Seite traegt viele kleine Bloecke — auf niedrigen
+   Seiten (iPad 1024x768) etwas enger setzen, damit nichts scrollt. */
+.mood-stats{margin-top:6px;padding-top:6px}
+.mood-stats b{font-size:clamp(19px,2.6vh,24px)}
+@media (max-height:820px){
+  .sec{margin-top:clamp(6px,1.2vh,12px)}
+  .bd-row{padding-top:0;padding-bottom:0}
+  /* Lange Eintraege duerfen die Seite nicht sprengen: das Feld scrollt
+     dann in sich, statt den Rest der Seite zu verschieben. */
+  .page-inner textarea.w{max-height:min(30vh,150px);overflow-y:auto}
+}
 /* ============================================================
    AUFKLEBER — gezeichnet, nicht als Zeichensatz
    ============================================================ */
@@ -573,7 +648,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
   border-color:var(--accent);color:var(--accent);
   background:color-mix(in oklab,var(--paper),var(--accent) 8%);
 }
-.photo-slot .cap{font-family:"Architects Daughter",cursive;font-size:11px;letter-spacing:.06em}
+.photo-slot .cap{font-family:var(--f-print);font-size:11px;letter-spacing:.06em}
 .photo-slot img{width:100%;height:100%;object-fit:cover;display:block}
 .photo-slot.filled{border-style:none;background:none}
 
@@ -629,7 +704,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .toc-row:hover{background:color-mix(in oklab,var(--paper),var(--accent) 10%)}
 .toc-row .t{font-size:clamp(17px,2.3vh,20px);white-space:nowrap}
 .toc-row .dots{flex:1;border-bottom:1.5px dotted var(--rule);transform:translateY(-4px)}
-.toc-row .p{font-family:"Karla",sans-serif;font-size:11px;color:var(--pencil)}
+.toc-row .p{font-family:var(--f-ui);font-size:11px;color:var(--pencil)}
 .toc-row .sw{width:11px;height:11px;border-radius:3px 6px 3px 6px;flex:0 0 auto;transform:translateY(1px)}
 .toc-group{margin-top:clamp(8px,1.7vh,16px)}
 .toc-group > .label{padding-left:6px}
@@ -643,9 +718,9 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
   border:1.5px solid transparent;transition:border-color .15s,background .15s,transform .15s cubic-bezier(.22,1,.36,1);
 }
 .mini:hover{border-color:var(--mc);background:color-mix(in oklab,var(--paper),var(--mc) 8%);transform:translateY(-2px)}
-.mini h4{font-family:"Kaushan Script",cursive;font-size:16.5px;color:var(--mc);margin-bottom:3px}
-.mini table{width:100%;border-collapse:collapse;font-family:"Caveat",cursive;font-size:11.5px;line-height:1}
-.mini th{font-family:"Karla",sans-serif;font-size:7.5px;font-weight:600;color:var(--pencil);padding-bottom:2px;letter-spacing:.02em}
+.mini h4{font-family:var(--f-display);font-size:16.5px;color:var(--mc);margin-bottom:3px}
+.mini table{width:100%;border-collapse:collapse;font-family:var(--f-hand);font-size:11.5px;line-height:1}
+.mini th{font-family:var(--f-ui);font-size:7.5px;font-weight:600;color:var(--pencil);padding-bottom:2px;letter-spacing:.02em}
 .mini td{text-align:center;padding:1.2px 0;color:var(--ink-soft);position:relative}
 .mini td.we{color:var(--pencil)}
 .mini td.has::after{content:"";position:absolute;left:50%;bottom:-.5px;width:3px;height:3px;border-radius:50%;background:var(--mc);transform:translateX(-50%)}
@@ -655,7 +730,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
    ============================================================ */
 .cal{width:100%;border-collapse:collapse;margin-top:10px;table-layout:fixed}
 .cal th{
-  font-family:"Architects Daughter",cursive;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  font-family:var(--f-print);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
   color:var(--ink-soft);padding-bottom:5px;border-bottom:1.6px solid var(--accent);
 }
 .cal td{border:1.2px dotted var(--rule);padding:0;vertical-align:top;height:1px}
@@ -666,7 +741,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
   transition:background .14s;
 }
 .cal .cell:hover{background:color-mix(in oklab,var(--paper),var(--accent) 12%)}
-.cal .d{font-family:"Caveat",cursive;font-weight:600;font-size:16px;color:var(--ink-soft);line-height:1}
+.cal .d{font-family:var(--f-hand);font-weight:600;font-size:16px;color:var(--ink-soft);line-height:1}
 .cal .cell.today .d{
   color:#fff;background:var(--accent);width:21px;height:21px;border-radius:50%;
   display:grid;place-items:center;font-size:13.5px;margin:-1px 0 1px -2px;
@@ -674,7 +749,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .cal .ev{font-size:13px;line-height:1.15;color:var(--ink);
   overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
   border-left:2.4px solid var(--accent);padding-left:4px;}
-.cal .bday{font-family:"Karla",sans-serif;font-size:9px;color:var(--accent);letter-spacing:.02em}
+.cal .bday{font-family:var(--f-ui);font-size:9px;color:var(--accent);letter-spacing:.02em}
 .cal .mk{display:flex;gap:2px;margin-top:auto}
 .cal .mk i{width:5px;height:5px;border-radius:50%;display:block}
 
@@ -698,9 +773,9 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
    ============================================================ */
 .habit{margin-top:14px}
 .habit-head{display:flex;align-items:center;gap:8px;margin-bottom:5px}
-.habit-head .hn{font-family:"Architects Daughter",cursive;font-size:13.5px;letter-spacing:.05em;flex:1;min-width:0;
+.habit-head .hn{font-family:var(--f-print);font-size:13.5px;letter-spacing:.05em;flex:1;min-width:0;
   text-overflow:ellipsis;overflow:hidden;white-space:nowrap}
-.habit-head .goal{font-family:"Karla",sans-serif;font-size:10px;color:var(--pencil);white-space:nowrap}
+.habit-head .goal{font-family:var(--f-ui);font-size:10px;color:var(--pencil);white-space:nowrap}
 .habit-head .dotc{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
 .habit-head .tools{display:flex;gap:1px;opacity:0;transition:opacity .15s}
 .habit:hover .habit-head .tools,.habit:focus-within .habit-head .tools{opacity:1}
@@ -723,11 +798,11 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 }
 .bars::after{
   content:"Ziel";position:absolute;right:0;bottom:var(--gp,50%);
-  transform:translateY(-100%);font-family:"Karla",sans-serif;font-size:8px;
+  transform:translateY(-100%);font-family:var(--f-ui);font-size:8px;
   letter-spacing:.08em;color:color-mix(in oklab,var(--hc),var(--ink-soft) 45%);
   pointer-events:none;padding-bottom:1px;
 }
-.bar-axis{display:flex;justify-content:space-between;font-family:"Karla",sans-serif;font-size:8.5px;color:var(--pencil);margin-top:2px}
+.bar-axis{display:flex;justify-content:space-between;font-family:var(--f-ui);font-size:8.5px;color:var(--pencil);margin-top:2px}
 
 /* Ja/Nein: zwei Reihen zu je 16 Feldern statt 31 Streichholzspalten.
    Dadurch werden die Felder groß genug zum Antippen. */
@@ -753,11 +828,11 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 /* Jedes fünfte Feld trägt seine Tageszahl — das reicht zur Orientierung. */
 .ticks button::after{
   content:attr(data-d);position:absolute;bottom:-11px;left:0;right:0;text-align:center;
-  font-family:"Karla",sans-serif;font-size:8px;color:var(--pencil);pointer-events:none;
+  font-family:var(--f-ui);font-size:8px;color:var(--pencil);pointer-events:none;
 }
 .ticks button:not(.mark5)::after{content:""}
 .ticks{row-gap:16px}
-.streak{font-family:"Architects Daughter",cursive;font-size:11.5px;color:var(--ink-soft);margin-top:4px;
+.streak{font-family:var(--f-print);font-size:11.5px;color:var(--ink-soft);margin-top:4px;
   display:flex;align-items:center;gap:5px}
 
 /* ============================================================
@@ -775,7 +850,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .song:last-child{border-bottom:none}
 .song:hover{background:color-mix(in oklab,var(--paper),var(--accent) 7%);translate:5px 0}
 .song .rank{
-  font-family:"Kaushan Script",cursive;font-size:29px;line-height:1;
+  font-family:var(--f-display);font-size:29px;line-height:1;
   color:var(--accent);width:32px;text-align:center;flex:0 0 auto;opacity:.85;
 }
 .song .cov{
@@ -790,7 +865,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .song .cov img{width:100%;height:100%;object-fit:cover;display:block}
 .song .meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .song .meta .ti{font-size:19px;line-height:1.15}
-.song .meta .ar{font-family:"Architects Daughter",cursive;font-size:11.5px;color:var(--ink-soft);letter-spacing:.04em}
+.song .meta .ar{font-family:var(--f-print);font-size:11.5px;color:var(--ink-soft);letter-spacing:.04em}
 .song .meta .no{font-size:15px;color:var(--ink-soft)}
 .song .side{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:0 0 auto}
 .hearts{display:flex;gap:1px}
@@ -801,7 +876,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .hearts button:hover{scale:1.2}
 .hearts svg{width:13px;height:13px;display:block}
 .count-toggle{display:flex;gap:4px;align-items:center}
-.count-toggle button{font-family:"Karla",sans-serif;font-size:10.5px;padding:3px 9px;border-radius:99px;
+.count-toggle button{font-family:var(--f-ui);font-size:10.5px;padding:3px 9px;border-radius:99px;
   border:1.4px solid var(--rule);color:var(--pencil)}
 .count-toggle button[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
 
@@ -812,8 +887,16 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .wheel{width:100%;max-width:min(100%,420px);height:auto;overflow:visible;touch-action:manipulation}
 .wheel .seg{cursor:pointer;transition:opacity .16s}
 .wheel .seg:hover{opacity:.82}
-.wheel .lbl{font-family:"Architects Daughter",cursive;font-size:9.5px;fill:var(--ink-soft);letter-spacing:.04em}
-.wheel .val{font-family:"Kaushan Script",cursive;font-size:12px;fill:var(--ink)}
+.wheel .lbl{font-family:var(--f-print);font-size:10.5px;fill:var(--ink-soft);letter-spacing:.03em}
+.wheel .val{font-family:var(--f-display);font-size:17px;fill:var(--ink)}
+
+/* Kurze, handschriftliche Einordnung unter dem Rad statt nackter Legende */
+.wheel-note{margin-top:clamp(4px,1.2vh,12px);text-align:center}
+.wheel-note p{margin:0;font-size:clamp(15px,2vh,18px);color:var(--ink-soft);line-height:1.45}
+.wheel-note b{font-family:var(--f-display);font-weight:400;
+  font-size:1.25em;color:var(--accent)}
+.wheel-note em{font-style:normal;color:var(--accent)}
+.wheel-note .hint{margin-top:3px}
 .l10-list{display:flex;flex-direction:column;gap:clamp(1px,.35vh,5px);margin-top:clamp(6px,1.2vh,12px)}
 .l10-row{
   display:grid;grid-template-columns:12px 1fr auto;gap:8px;align-items:center;
@@ -825,13 +908,13 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .l10-row .sw{width:12px;height:12px;border-radius:3px 6px 3px 6px}
 .l10-row .nm{font-size:clamp(16px,2.1vh,18px);text-align:left}
 .l10-row .nm .w{font-size:18px}
-.l10-score{display:flex;align-items:center;gap:3px;font-family:"Karla",sans-serif;font-size:11px;color:var(--ink-soft)}
-.l10-score b{font-family:"Kaushan Script",cursive;font-size:19px;font-weight:400;color:var(--lc)}
+.l10-score{display:flex;align-items:center;gap:3px;font-family:var(--f-ui);font-size:11px;color:var(--ink-soft)}
+.l10-score b{font-family:var(--f-display);font-size:19px;font-weight:400;color:var(--lc)}
 .l10-detail{margin-top:clamp(6px,1.1vh,10px)}
 .stepper{display:inline-flex;align-items:center;gap:0;border:1.5px solid var(--rule);border-radius:99px;overflow:hidden}
-.stepper button{width:22px;height:22px;display:grid;place-items:center;color:var(--ink-soft);font-family:"Karla",sans-serif;font-size:13px}
+.stepper button{width:22px;height:22px;display:grid;place-items:center;color:var(--ink-soft);font-family:var(--f-ui);font-size:13px}
 .stepper button:hover{background:color-mix(in oklab,var(--paper),var(--accent) 14%);color:var(--accent)}
-.stepper .v{min-width:26px;text-align:center;font-family:"Kaushan Script",cursive;font-size:18px}
+.stepper .v{min-width:26px;text-align:center;font-family:var(--f-display);font-size:18px}
 
 
 /* Auf niedrigen Seiten (iPad 1024x768) müssen Liste UND Detail zusammen
@@ -857,7 +940,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .vslot:hover{border-color:var(--accent);color:var(--accent);background:color-mix(in oklab,var(--paper),var(--accent) 9%)}
 .vslot.filled{border-style:solid;padding:4px;background:var(--paper)}
 .vslot img{width:100%;height:100%;object-fit:cover;border-radius:4px;display:block}
-.vslot .cap{position:absolute;left:0;right:0;bottom:0;font-family:"Architects Daughter",cursive;font-size:10px;
+.vslot .cap{position:absolute;left:0;right:0;bottom:0;font-family:var(--f-print);font-size:10px;
   background:color-mix(in oklab,var(--paper),transparent 12%);color:var(--ink-soft);padding:2px 5px;text-align:center}
 .vslot .rm{position:absolute;top:3px;right:3px;width:19px;height:19px;border-radius:50%;
   background:var(--paper);border:1.3px solid var(--rule);display:grid;place-items:center;opacity:0;transition:opacity .15s}
@@ -877,11 +960,11 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
   transition:clip-path .42s cubic-bezier(.22,1,.36,1);
   background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.22) 0 4px,transparent 4px 8px)}
 .prog-row{display:flex;align-items:center;gap:9px;margin-top:6px}
-.prog-row .pct{font-family:"Kaushan Script",cursive;font-size:19px;color:var(--accent);min-width:44px;text-align:right}
+.prog-row .pct{font-family:var(--f-display);font-size:19px;color:var(--accent);min-width:44px;text-align:right}
 .steps{margin-top:7px;display:flex;flex-direction:column;gap:3px}
 .step{display:flex;align-items:flex-start;gap:7px;font-size:17px}
 .step.done{color:var(--pencil);text-decoration:line-through;text-decoration-thickness:1.2px}
-.linkchip{display:inline-flex;align-items:center;gap:4px;font-family:"Karla",sans-serif;font-size:10px;
+.linkchip{display:inline-flex;align-items:center;gap:4px;font-family:var(--f-ui);font-size:10px;
   color:var(--ink-soft);border:1.3px dashed var(--rule);border-radius:99px;padding:2px 8px}
 
 /* ============================================================
@@ -891,11 +974,11 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .bd-cols{columns:2;column-gap:clamp(12px,3%,26px)}
 .bd-cols .bd-month{break-inside:avoid;-webkit-column-break-inside:avoid}
 .bd-month{margin-bottom:clamp(4px,1vh,11px);break-inside:avoid}
-.bd-month h4{font-family:"Kaushan Script",cursive;font-size:19px;color:var(--mc);display:flex;align-items:center;gap:7px}
+.bd-month h4{font-family:var(--f-display);font-size:19px;color:var(--mc);display:flex;align-items:center;gap:7px}
 .bd-month h4::after{content:"";flex:1;height:1.4px;background:var(--rule)}
 .bd-row{display:flex;align-items:baseline;gap:8px;padding:2px 2px 2px 6px;border-radius:5px}
 .bd-row:hover{background:color-mix(in oklab,var(--paper),var(--mc) 9%)}
-.bd-row .dt{font-family:"Karla",sans-serif;font-size:11px;color:var(--mc);min-width:26px;font-weight:600}
+.bd-row .dt{font-family:var(--f-ui);font-size:11px;color:var(--mc);min-width:26px;font-weight:600}
 .bd-row .nm{font-size:clamp(16px,2.1vh,18px);flex:1}
 .bd-row .no{font-size:14px;color:var(--pencil)}
 .bd-row .rm{opacity:0;transition:opacity .14s}
@@ -905,7 +988,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
    WEEK
    ============================================================ */
 .week-nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}
-.week-nav button{font-family:"Karla",sans-serif;font-size:10.5px;border:1.4px solid var(--rule);
+.week-nav button{font-family:var(--f-ui);font-size:10.5px;border:1.4px solid var(--rule);
   border-radius:99px;padding:3px 10px;color:var(--pencil)}
 .week-nav button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .daycards{display:flex;flex-direction:column;gap:8px;margin-top:11px}
@@ -918,9 +1001,12 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .daycard:nth-child(even){border-radius:var(--radius-hand2)}
 .daycard:hover{transform:translateY(-2px);border-color:var(--accent);background:color-mix(in oklab,var(--paper),var(--accent) 6%)}
 .daycard.we{background:color-mix(in oklab,var(--paper),var(--accent) 7%)}
+
+/* Nachbarmonatstage: dezent auf dem iPad, ganz weg auf dem Handy */
+.daycard.ghost{opacity:.22;pointer-events:none}
 .daycard .dh{display:flex;align-items:baseline;gap:7px}
-.daycard .dw{font-family:"Architects Daughter",cursive;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
-.daycard .dn{font-family:"Kaushan Script",cursive;font-size:21px;color:var(--ink-soft);line-height:1}
+.daycard .dw{font-family:var(--f-print);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.daycard .dn{font-family:var(--f-display);font-size:21px;color:var(--ink-soft);line-height:1}
 .daycard .mini-mood{margin-left:auto;display:flex;align-items:center;gap:4px}
 .daycard .mini-mood i{width:11px;height:11px;border-radius:4px 7px 4px 7px;display:block}
 .daycard .lines{flex:1;background-image:repeating-linear-gradient(to bottom,transparent 0 20px,var(--rule) 20px 21px);
@@ -934,20 +1020,20 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
    DAY DETAIL
    ============================================================ */
 .day-head{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
-.day-head .big{font-family:"Kaushan Script",cursive;font-size:clamp(44px,7vh,72px);line-height:.85;color:var(--accent)}
-.day-head .wd{font-family:"Architects Daughter",cursive;font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-soft)}
+.day-head .big{font-family:var(--f-display);font-size:clamp(44px,7vh,72px);line-height:.85;color:var(--accent)}
+.day-head .wd{font-family:var(--f-print);font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-soft)}
 .sec{margin-top:clamp(7px,1.5vh,14px)}
 .sec > .label{display:flex;align-items:center;gap:8px;margin-bottom:5px}
 .sec > .label::after{content:"";flex:1;height:1.3px;background:var(--rule)}
 .grat{display:flex;flex-direction:column;gap:4px}
 .grat .g{display:flex;align-items:center;gap:8px}
-.grat .n{font-family:"Kaushan Script",cursive;font-size:17px;color:var(--accent);width:15px;flex:0 0 auto}
+.grat .n{font-family:var(--f-display);font-size:17px;color:var(--accent);width:15px;flex:0 0 auto}
 .todos{display:flex;flex-direction:column;gap:3px}
 .todo{display:flex;align-items:center;gap:8px}
 .todo.done .w{color:var(--pencil);text-decoration:line-through;text-decoration-thickness:1.2px}
 .scale{display:flex;gap:5px;align-items:center}
 .scale button{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--rule);
-  display:grid;place-items:center;font-family:"Karla",sans-serif;font-size:11px;color:var(--pencil);
+  display:grid;place-items:center;font-family:var(--f-ui);font-size:11px;color:var(--pencil);
   transition:transform .18s cubic-bezier(.22,1,.36,1)}
 .scale button:hover{transform:scale(1.12);border-color:var(--accent)}
 .scale button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -959,7 +1045,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
    ============================================================ */
 .mtabs{display:flex;gap:4px;flex-wrap:wrap;margin-top:10px}
 .mtab{
-  font-family:"Architects Daughter",cursive;font-size:11.5px;letter-spacing:.08em;
+  font-family:var(--f-print);font-size:11.5px;letter-spacing:.08em;
   padding:4px 11px;border-radius:99px;border:1.5px solid var(--rule);color:var(--ink-soft);
   transition:background .15s,border-color .15s,color .15s;
 }
@@ -980,7 +1066,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
   animation:pop .26s cubic-bezier(.16,1,.3,1);
 }
 @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
-.sheet h3{font-family:"Kaushan Script",cursive;font-size:26px;color:var(--accent)}
+.sheet h3{font-family:var(--f-display);font-size:26px;color:var(--accent)}
 .sheet .fld{margin-top:11px}
 .sheet .fld > .label{display:block;margin-bottom:3px}
 .sheet input.w,.sheet textarea.w,.sheet select.w{
@@ -1040,6 +1126,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
   /* Touchflächen: die Ecken-Schalter brauchen am Finger mehr Höhe */
   #corner button{min-height:36px;padding:8px 14px;font-size:12px}
   .week-nav button{min-height:34px;padding:7px 13px;font-size:12px}
+  .daycard.ghost{display:none}
   .hearts button{width:32px;height:32px}
   .count-toggle button{min-height:34px;padding:7px 13px;font-size:12px}
   .icon-btn{width:34px;height:34px}
@@ -1064,7 +1151,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
   }
   #pager button{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--ink-soft)}
   #pager button:disabled{opacity:.3}
-  #pager .pl{font-family:"Karla",sans-serif;font-size:10.5px;color:var(--pencil);letter-spacing:.05em;
+  #pager .pl{font-family:var(--f-ui);font-size:10.5px;color:var(--pencil);letter-spacing:.05em;
     max-width:15ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
 }
 #pager{display:none}
