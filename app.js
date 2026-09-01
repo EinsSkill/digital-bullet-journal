@@ -1629,17 +1629,22 @@ function poseStrips(els, w, grad, bend, dir){
   }
 }
 
-/** Klont die aufliegende Seite als Streifensatz in die Blätter-Ebene. */
-function buildStrips(src, back){
+/**
+ * Baut das umblätternde Blatt aus Streifen.
+ * Jeder Streifen hat zwei Flächen, wie echtes Papier:
+ *   vorne  – die Seite, die gerade oben liegt
+ *   hinten – die Seite, die nach dem Blättern erscheint
+ * Beim Vorwärtsblättern wird aus der rechten Seite die neue LINKE —
+ * genau die klebt auf der Rückseite. Der Punkt, der vorne x von der
+ * Falz entfernt liegt, sitzt hinten ebenso weit von der Falz, nur
+ * von der anderen Kante gezählt.
+ */
+function buildStrips(vorneHTML, hintenHTML, back){
   const flip = $("#flip");
   const N = stripCount();
-  const box = $("#spread").getBoundingClientRect();
-  const halb = box.width / 2;
+  const halb = $("#spread").getBoundingClientRect().width / 2;
   const w = halb / N;
-  const inner = src.querySelector(".page-inner").innerHTML;
 
-  // Beim Vorwärtsblättern liegt die Achse am Bundsteg (Mitte),
-  // beim Zurückblättern ebenso — nur die Drehrichtung kehrt sich um.
   const wrap = document.createElement("div");
   wrap.style.cssText = `position:absolute;top:0;height:100%;left:50%;width:${halb}px;
     transform-style:preserve-3d;${back ? "transform:scaleX(-1);transform-origin:left center;" : ""}`;
@@ -1650,18 +1655,29 @@ function buildStrips(src, back){
     s.className = "strip" + (i === N - 1 ? " edge" : "");
     // 0.6px Überlappung, damit zwischen den Streifen keine Fuge aufblitzt
     s.style.cssText = `width:${(w + .6).toFixed(2)}px;left:0;`;
-    const face = document.createElement("div");
-    face.className = "face";
-    face.style.cssText = `width:${(w + .6).toFixed(2)}px;left:0;`;
-    const fc = document.createElement("div");
-    fc.className = "fc";
-    fc.style.cssText = `width:${halb}px;left:${(-i * w).toFixed(2)}px;` +
-      (back ? "transform:scaleX(-1);transform-origin:center;" : "");
-    fc.innerHTML = inner;
-    face.appendChild(fc);
+
+    const vorne = document.createElement("div");
+    vorne.className = "face front";
+    vorne.style.cssText = `width:${(w + .6).toFixed(2)}px;left:0;`;
+    const fv = document.createElement("div");
+    fv.className = "fc";
+    fv.style.cssText = `width:${halb}px;left:${(-i * w).toFixed(2)}px;`;
+    fv.innerHTML = vorneHTML;
+    vorne.appendChild(fv);
+
+    const hinten = document.createElement("div");
+    hinten.className = "face back";
+    hinten.style.cssText = `width:${(w + .6).toFixed(2)}px;left:0;`;
+    const fh = document.createElement("div");
+    fh.className = "fc";
+    // Von der Falz aus gleich weit — auf der Rückseite von der anderen Kante
+    fh.style.cssText = `width:${halb}px;left:${((i + 1) * w - halb).toFixed(2)}px;`;
+    fh.innerHTML = hintenHTML;
+    hinten.appendChild(fh);
+
     const sh = document.createElement("div");
     sh.className = "sh";
-    s.append(face, sh);
+    s.append(vorne, hinten, sh);
     wrap.appendChild(s);
     els.push({el:s, sh});
   }
@@ -1685,14 +1701,20 @@ function animateTurn(mutate, back){
   endFlip();
   if (reduced()){ mutate(); render(); return; }
 
-  const src = back ? $(".page.left") : $(".page.right");
-  const bau = buildStrips(src, back);
-  flipEls = bau;
-
+  // Vorderseite ist die Seite, die jetzt oben liegt …
+  const vorne = (back ? $(".page.left") : $(".page.right"))
+                  .querySelector(".page-inner").innerHTML;
   mutate();
   render();
+  // … und die Rückseite die, die nach dem Blättern an ihrer Stelle steht:
+  // vorwärts wird aus der rechten Seite die neue linke.
+  const hinten = (back ? $(".page.right") : $(".page.left"))
+                  .querySelector(".page-inner").innerHTML;
 
-  const D = 620;
+  const bau = buildStrips(vorne, hinten, back);
+  flipEls = bau;
+
+  const D = 700;
   const start = performance.now();
   let frames = 0;
   const dir = -1;                      // Blatt dreht immer vom Betrachter weg
@@ -1701,10 +1723,10 @@ function animateTurn(mutate, back){
     const t = Math.min(1, (now - start) / D);
     // weiches Ein- und Ausschwingen
     const e = t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
-    const grad = e * 172;
-    const bend = curveAt(t) * 26;      // Biegung, am stärksten in der Mitte
+    const grad = e * 174;
+    const bend = curveAt(t) * 22;      // Biegung, am stärksten in der Mitte
     poseStrips(bau.els, bau.w, grad, bend, dir);
-    bau.under.style.opacity = (curveAt(t) * .8).toFixed(3);
+    bau.under.style.opacity = (curveAt(t) * .72).toFixed(3);
     frames++;
     if (t < 1) flipRAF = requestAnimationFrame(schritt);
     else {
@@ -1721,6 +1743,15 @@ function animateTurn(mutate, back){
 /** Zuletzt gemessene Bildrate beim Blättern (für Diagnose). */
 let lastFlipFPS = 0;
 
+/** Vorsatzpapier: die Innenseite des Buchdeckels. */
+function endpaper(){
+  return `<div class="endpaper">
+    <span class="ep-line"></span>
+    <p class="ep-note">Dieses Buch gehört</p>
+    <p class="ep-name">${esc(S.meta.name)}</p>
+  </div>`;
+}
+
 /* --- Buch auf- und zuklappen -------------------------------- */
 
 /** Der Deckel ist steif: er biegt sich nicht, er schwingt auf. */
@@ -1733,7 +1764,10 @@ function openBook(){
   const flip = $("#flip");
   const deckel = document.createElement("div");
   deckel.className = "cover-leaf";
-  deckel.innerHTML = `<div class="leaf-face">${$(".page.right").innerHTML}</div>
+  // Vorne der Deckel, hinten das Vorsatzpapier — beim Aufklappen sieht
+  // man die Innenseite, nicht den seitenverkehrten Deckel.
+  deckel.innerHTML = `<div class="leaf-face front">${$(".page.right").innerHTML}</div>
+    <div class="leaf-face back">${endpaper()}</div>
     <div class="leaf-shade"></div>`;
   deckel.querySelectorAll("input,textarea,button,select,a")
         .forEach(el => { el.setAttribute("tabindex","-1"); el.setAttribute("aria-hidden","true"); });
@@ -1746,12 +1780,13 @@ function openBook(){
   cur = 1; dayView = null; side = 0;
   render();
 
-  const D = 820;
+  const D = 860;
   deckel.animate([
-      {transform:"rotateY(0deg)"},
-      {transform:"rotateY(-104deg)", offset:.55},
-      {transform:"rotateY(-176deg)"}
-    ], {duration:D, easing:"cubic-bezier(.3,.02,.16,1)", fill:"forwards"});
+      {transform:"rotateY(0deg)", opacity:1},
+      {transform:"rotateY(-100deg)", opacity:1, offset:.52},
+      {transform:"rotateY(-168deg)", opacity:1, offset:.86},
+      {transform:"rotateY(-179deg)", opacity:0}
+    ], {duration:D, easing:"cubic-bezier(.32,.03,.18,1)", fill:"forwards"});
   deckel.querySelector(".leaf-shade").animate(
       [{opacity:0}, {opacity:.34, offset:.5}, {opacity:.14}],
       {duration:D, easing:"ease-in-out", fill:"forwards"});
@@ -1773,7 +1808,8 @@ function closeBook(){
   const flip = $("#flip");
   const deckel = document.createElement("div");
   deckel.className = "cover-leaf";
-  deckel.innerHTML = `<div class="leaf-face">${$(".page.right").innerHTML}</div>
+  deckel.innerHTML = `<div class="leaf-face front">${$(".page.right").innerHTML}</div>
+    <div class="leaf-face back">${endpaper()}</div>
     <div class="leaf-shade"></div>`;
   deckel.querySelectorAll("input,textarea,button,select,a")
         .forEach(el => { el.setAttribute("tabindex","-1"); el.setAttribute("aria-hidden","true"); });
@@ -1782,10 +1818,11 @@ function closeBook(){
 
   const D = 780;
   deckel.animate([
-      {transform:"rotateY(-176deg)"},
-      {transform:"rotateY(-72deg)", offset:.5},
-      {transform:"rotateY(0deg)"}
-    ], {duration:D, easing:"cubic-bezier(.3,.02,.16,1)", fill:"forwards"});
+      {transform:"rotateY(-179deg)", opacity:0},
+      {transform:"rotateY(-166deg)", opacity:1, offset:.14},
+      {transform:"rotateY(-70deg)", opacity:1, offset:.52},
+      {transform:"rotateY(0deg)", opacity:1}
+    ], {duration:D, easing:"cubic-bezier(.32,.03,.18,1)", fill:"forwards"});
   deckel.querySelector(".leaf-shade").animate(
       [{opacity:.2}, {opacity:.3, offset:.45}, {opacity:0}],
       {duration:D, easing:"ease-in-out", fill:"forwards"});

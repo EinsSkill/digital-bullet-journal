@@ -323,8 +323,62 @@ input,textarea,select{font:inherit;color:inherit}
   background-image:var(--dots),var(--noise);
   background-size:22px 22px,180px 180px;
 }
-.cover-leaf .leaf-face{position:absolute;inset:0;backface-visibility:hidden}
+.cover-leaf{transform-style:preserve-3d}
+.cover-leaf .leaf-face{position:absolute;inset:0;backface-visibility:hidden;overflow:hidden}
+.cover-leaf .leaf-face.back{transform:rotateY(180deg)}
+/* Vorsatzpapier: ruhige Innenseite des Deckels */
+.endpaper{
+  height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;text-align:center;padding:12%;
+  background:
+    repeating-linear-gradient(58deg, rgba(0,0,0,.014) 0 2px, transparent 2px 7px),
+    color-mix(in oklab,var(--cover-paper),var(--accent) 5%);
+  color:color-mix(in oklab,var(--cover-ink),transparent 25%);
+}
+.endpaper .ep-line{width:34%;height:1.4px;background:currentColor;opacity:.3}
+.endpaper .ep-note{font-family:var(--f-print);font-size:11px;letter-spacing:.24em;
+  text-transform:uppercase;margin:0;opacity:.75}
+.endpaper .ep-name{font-family:var(--f-display);font-size:clamp(20px,3.4vh,30px);margin:0}
 .cover-leaf .leaf-shade{position:absolute;inset:0;pointer-events:none;background:#000;opacity:0}
+
+
+/* ============================================================
+   DECKELPAPIER
+   Der Deckel ist kein Notizpapier: kein Punktraster, ein
+   waermerer, leicht dunklerer Ton und eine feine Leinenstruktur.
+   ============================================================ */
+:root{
+  --cover-paper:#F1EADA;
+  --cover-ink:#4A452F;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--cover-paper:#2B2723;--cover-ink:#E4DAC6}
+}
+:root[data-theme="dark"]{--cover-paper:#2B2723;--cover-ink:#E4DAC6}
+
+.cover{
+  color:var(--cover-ink);
+  background:
+    /* Leinen: zwei feine Faserrichtungen */
+    repeating-linear-gradient(90deg,
+      rgba(0,0,0,.021) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(0deg,
+      rgba(0,0,0,.016) 0 1px, transparent 1px 3px),
+    radial-gradient(112% 84% at 50% 30%,
+      color-mix(in oklab,var(--cover-paper),var(--accent) 9%), transparent 68%),
+    var(--cover-paper);
+}
+.cover .who .w,
+.cover .motto .w,
+.cover .ded .w{color:var(--cover-ink)}
+.cover .kicker,.cover .for{color:color-mix(in oklab,var(--cover-ink),transparent 32%)}
+.cover .yr{
+  color:color-mix(in oklab,var(--accent),var(--cover-ink) 22%);
+  text-shadow:0 1px 0 color-mix(in oklab,var(--cover-paper),#fff 60%);
+}
+/* Die Seite unter dem Deckel traegt kein Punktraster mehr */
+#book.cover-mode .page.right{background-image:none;background:var(--cover-paper)}
+.cover-leaf{background:var(--cover-paper);background-image:none}
 
 /* ============================================================
    UMBLÄTTERN — gebogenes Blatt aus Streifen
@@ -344,13 +398,13 @@ input,textarea,select{font:inherit;color:inherit}
 .strip{
   position:absolute;top:0;height:100%;
   transform-origin:left center;
-  /* Rückseite des Blattes: leeres Papier */
-  background:var(--paper);
-  background-image:var(--dots),var(--noise);
-  background-size:22px 22px,180px 180px;
-  overflow:hidden;
+  /* Damit die beiden Flaechen wirklich im Raum liegen — ohne das hier
+     greift backface-visibility am Kind nicht und der Inhalt scheint
+     seitenverkehrt durch. */
+  transform-style:preserve-3d;
 }
-/* Vorderseite: der Seitenausschnitt, verschwindet nach 90° */
+/* Zwei Flaechen wie bei echtem Papier: vorne die aufliegende Seite,
+   hinten die, die nach dem Blaettern an ihrer Stelle steht. */
 .strip .face{
   position:absolute;top:0;height:100%;
   backface-visibility:hidden;
@@ -359,6 +413,7 @@ input,textarea,select{font:inherit;color:inherit}
   background-image:var(--dots),var(--noise);
   background-size:22px 22px,180px 180px;
 }
+.strip .face.back{transform:rotateY(180deg)}
 .strip .face > .fc{
   position:absolute;top:0;height:100%;
   padding:var(--page-pad) clamp(20px,3.4%,42px);
@@ -366,6 +421,7 @@ input,textarea,select{font:inherit;color:inherit}
 /* Schattierung pro Streifen — JS setzt nur die Deckkraft */
 .strip .sh{
   position:absolute;inset:0;pointer-events:none;background:#000;opacity:0;
+  transform:translateZ(.4px);
 }
 /* Die helle Papierkante am äußeren Rand des aufgestellten Blattes */
 .strip.edge::after{
