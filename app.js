@@ -148,6 +148,17 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
+/** Relative Helligkeit einer Hex-Farbe (WCAG). */
+function lumOf(hex){
+  const v = hex.replace('#','');
+  const c = [0,2,4].map(i => parseInt(v.substr(i,2),16)/255)
+    .map(x => x <= .03928 ? x/12.92 : Math.pow((x+.055)/1.055, 2.4));
+  return .2126*c[0] + .7152*c[1] + .0722*c[2];
+}
+/** Lesbare Schriftfarbe auf einer Monatsfarbe — hell oder dunkel, je nachdem was trägt. */
+// Umschlagpunkt rechnerisch: ab Helligkeit ~0.21 trägt dunkle Schrift besser als weiße.
+const fgOn = hex => lumOf(hex) > .21 ? '#241F1A' : '#FFF8EE';
+
 /** Monatsfarbe fürs Nachtlicht aufhellen (--lift ist tagsüber 0 %). */
 const lift = c => `color-mix(in oklab, ${c}, var(--lift-color) var(--lift))`;
 
@@ -198,135 +209,380 @@ function pickImage(cb){
 
 /* ============================================================
    5 · ILLUSTRATIONEN
-   Alles handgezeichnet: jede Form läuft durch den Wackel-Filter,
-   damit keine Linie mathematisch glatt bleibt.
+   Jedes Motiv ist bewusst gezeichnet: eine kräftigere Außenlinie,
+   darin feinere Binnenzeichnung. Alle Motive sind um (0,0)
+   zentriert und rund 32 Einheiten groß — dadurch lassen sie sich
+   frei skalieren, drehen und kombinieren.
+   Konvention je Motiv: { d: Kontur, i: Details, f: Füllfläche }
    ============================================================ */
 
-/** Motive für die Moodtracker – ein Pfad zum Füllen, einer als Kontur. */
-const MOTIF = {
-  snow:  `<path d="M20 4v32M6.2 11.5 33.8 28.5M33.8 11.5 6.2 28.5M20 11l-4.6-4M20 11l4.6-4M20 29l-4.6 4M20 29l4.6-4M12 15l-6-.6M12 25l-6 .6M28 15l6-.6M28 25l6 .6"/>`,
-  heart: `<path d="M20 34C9 26.5 5 21 5 15.6 5 11 8.4 7.7 12.6 7.7c2.9 0 5.6 1.6 7.4 4.4 1.8-2.8 4.5-4.4 7.4-4.4C31.6 7.7 35 11 35 15.6 35 21 31 26.5 20 34Z"/>`,
-  bud:   `<path d="M20 36V17M20 17c-5.6 0-9-3.4-9-8 0-3.4 2-6 4.4-6 3 0 4.6 3 4.6 6.4 0-3.4 1.6-6.4 4.6-6.4 2.4 0 4.4 2.6 4.4 6 0 4.6-3.4 8-9 8ZM20 27c-3.4-1-5-3-5.4-6"/>`,
-  drop:  `<path d="M20 4c6.4 8 10.5 13.6 10.5 18.6A10.5 10.5 0 0 1 20 33 10.5 10.5 0 0 1 9.5 22.6C9.5 17.6 13.6 12 20 4Z"/>`,
-  bloom: `<path d="M20 20c0-5 2.4-8 5.4-8s4.6 2.4 4.6 5c0 3-2.6 5-6 5M20 20c5 0 8 2.4 8 5.4s-2.4 4.6-5 4.6c-3 0-5-2.6-5-6M20 20c0 5-2.4 8-5.4 8S10 25.6 10 23c0-3 2.6-5 6-5M20 20c-5 0-8-2.4-8-5.4S14.4 10 17 10c3 0 5 2.6 5 6"/><circle cx="20" cy="20" r="3.4"/>`,
-  sun:   `<circle cx="20" cy="20" r="8.6"/><path d="M20 3.5v5M20 31.5v5M3.5 20h5M31.5 20h5M8.3 8.3l3.6 3.6M28.1 28.1l3.6 3.6M31.7 8.3l-3.6 3.6M11.9 28.1l-3.6 3.6"/>`,
-  wave:  `<path d="M4 24c4-5 8-5 12 0s8 5 12 0 6-3.6 8-1.6M4 31c4-5 8-5 12 0s8 5 12 0 6-3.6 8-1.6M11 15c0-4 3.6-7.6 9-7.6s9 3.6 9 7.6"/>`,
-  flower:`<path d="M20 22.5V36M20 22.5c-4.6 0-7.6-2.6-7.6-6s3-6 7.6-6 7.6 2.6 7.6 6-3 6-7.6 6Z"/><path d="M20 10.5c0-3.6 1.6-6 4-6M20 10.5c0-3.6-1.6-6-4-6M12.4 16.5c-3.4-1-5.6-3-5-5.4M27.6 16.5c3.4-1 5.6-3 5-5.4M16 30c-3.6-.6-5.6-2.6-6-5"/>`,
-  leaf:  `<path d="M9 32C6 22 11 9.5 31.5 6.5 33 22 24 32.5 12 32M12 32C15 24 20 17 29 10"/>`,
-  acorn: `<path d="M12 17.5c0 8 3.4 15.5 8 15.5s8-7.5 8-15.5ZM10 17.5c0-4.4 4.4-8 10-8s10 3.6 10 8ZM20 9.5V4.5"/>`,
-  tea:   `<path d="M13 15h14l-2 17.5H15Z"/><path d="M20 15V8.5c0-2 1.4-3 3.4-3H27"/><path d="M15.5 22.5h9M16 27h8"/>`,
-  star:  `<path d="M20 4.5 24.4 15l11.1.9-8.4 7.3 2.6 10.8L20 28.3l-9.7 5.7 2.6-10.8-8.4-7.3 11.1-.9Z"/>`
+const ART = {
+  /* --- Winter ------------------------------------------------ */
+  snowflake:{
+    d:`M0-16V16M-13.9-8 13.9 8M13.9-8-13.9 8`,
+    i:`M0-11l-4.2-4.2M0-11l4.2-4.2M0 11l-4.2 4.2M0 11l4.2 4.2
+       M-9.5-5.5l-5.8-.6M-9.5 5.5l-5.8.6M9.5-5.5l5.8-.6M9.5 5.5l5.8.6
+       M0-5.5l-2.6-2.6M0-5.5l2.6-2.6M0 5.5l-2.6 2.6M0 5.5l2.6 2.6`},
+  firSprig:{
+    d:`M0 16C0 4 1-8 3-17`,
+    i:`M.4 10c-5 .4-8-2-9-6.6 4.6-1.6 8.2 0 9.6 4.4M1 2.6c-4.6.4-7.6-1.8-8.6-6 4.4-1.6 7.8 0 9 4
+       M2-5c-4.2.4-7-1.6-8-5.4 4-1.4 7.2 0 8.4 3.6M1.2 8c4.8-1.6 8-.4 9.6 3.6-4.2 2.4-7.8 1.6-9.8-1.4
+       M1.8.6c4.4-1.6 7.4-.6 9 3-4 2.2-7.2 1.4-9.2-1.2M2.6-6.8c4-1.4 6.8-.6 8.4 2.6-3.6 2.2-6.6 1.4-8.6-1`},
+  mug:{
+    d:`M-10-6h17c.4 6.6-.4 12-2.4 16.4H-7.6C-9.6 6-10.4.6-10-6Z`,
+    i:`M7 -3.4c3.6-.6 5.6.8 5.8 3.6.2 2.8-1.6 4.4-5.2 4.6M-11.6 12.4h20
+       M-3.4-9.6c-.4-2.4 1.4-3.2 1.2-5.4M2.6-9.6c-.4-2.4 1.4-3.2 1.2-5.4`,
+    f:`M-9.4-5h15.6c.2 5.8-.6 10.6-2.2 14.4H-7C-8.6 5.6-9.4.8-9.4-5Z`},
+  starFive:{
+    d:`M0-16 4.4-4.6 16.4-3.8 7.2 4.2 10 16 0 9.6-10 16l2.8-11.8-9.2-8 12-.8Z`,
+    i:`M0-9.6 2.2-4l5.8.4-4.4 3.8`},
+  mitten:{
+    d:`M-7-13c5-1.4 9.4-1 12.4 1.2 1 4.8 1 10.4 0 16.8-4.6 1.6-9 1.6-13.2 0-1.6-6-1.4-11.8.8-18Z`,
+    i:`M-7.6 8.6c4.2 1.4 8.4 1.4 12.6 0M-6.6-5.4c-3.6-1.6-5.8-1-6.6 1.8-.8 2.8.6 4.8 4.2 6`,
+    f:`M-6-11.6c4.2-1 7.8-.6 10.4 1.2.8 4.2.8 9 0 14.4-4 1.4-7.8 1.4-11.4 0-1.4-5.2-1.2-10.4 1-15.6Z`},
+
+  /* --- Frühling ---------------------------------------------- */
+  bud:{
+    d:`M0 16V-1`,
+    i:`M0-1c-5.6 0-9.2-3.4-9.2-8.2 0-3.4 2-6 4.4-6 3 0 4.8 3 4.8 6.6 0-3.6 1.8-6.6 4.8-6.6 2.4 0 4.4 2.6 4.4 6C9.2-4.4 5.6-1 0-1Z
+       M0 8c-3.6-1-5.4-3.2-5.8-6.4M0 3.4c3.4-.8 5.2-2.6 5.8-5.4`},
+  tulip:{
+    d:`M0 16V0`,
+    i:`M-7.4-9.4c0-3.4 3.2-6.2 7.4-6.2s7.4 2.8 7.4 6.2c0 5.4-3.2 9.4-7.4 9.4S-7.4-4-7.4-9.4Z
+       M-2.6-14.8c-.6 4.8-.6 9.6 0 14.4M2.6-14.8c.6 4.8.6 9.6 0 14.4
+       M0 9c-4.4-.8-7-3-8-6.6 4-.6 6.8 1.4 8.4 5.6`,
+    f:`M-6-9.2c0-2.8 2.6-5 6-5s6 2.2 6 5c0 4.6-2.6 8-6 8s-6-3.4-6-8Z`},
+  birdling:{
+    d:`M-9.6 2.2c0-5.4 4.2-9.6 9.6-9.6 4.8 0 8.4 3 9.4 7.2l6.6 2.4-6.6 2.2c-1 4-4.6 6.8-9.4 6.8-5.4 0-9.6-4-9.6-9Z`,
+    i:`M-3.6-1.4a1.5 1.5 0 1 0 .1 0M-9.6 1.4c-3.4-.6-5.4-2.2-6-4.8 3.4-.8 5.8.4 7 3.4
+       M-2-7.2c-.4-3 .6-5 3-6M-6.6 9.6l-1.6 5M0 11l-1 4.6`},
+  umbrella:{
+    d:`M-16 0c0-8.4 7.2-15 16-15S16-8.4 16 0Z`,
+    i:`M-16 0c2.6-8.4 5.2-13.4 8-15 2.8 1.6 5.4 6.6 8 15M0-15v-2.6
+       M0 0v11.6c0 2.6-1.6 4-4 4s-4-1.4-4-3.4`,
+    f:`M-14.4 0c0-7.4 6.4-13.4 14.4-13.4S14.4-7.4 14.4 0Z`},
+  raincloud:{
+    d:`M-13 2.6c-3.6 0-6.4-2.8-6.4-6.4 0-3.4 2.6-6.2 6-6.4.6-4.6 4.4-8 9-8 3.8 0 7 2.4 8.4 5.8 1-.6 2.2-.8 3.4-.8 4 0 7.4 3.2 7.4 7.2 0 4.2-3.4 7.6-7.6 7.6Z`,
+    i:`M-8.6 6.4l-2.4 6.4M-1 6.4l-2.4 6.4M6.6 6.4l-2.4 6.4`,
+    f:`M-12.4 1.4c-2.8 0-5-2.2-5-5s2.2-5 5-5.2c.6-3.8 3.8-6.6 7.6-6.6 3.2 0 6 2 7.2 4.8.8-.4 1.8-.6 2.8-.6 3.4 0 6.2 2.8 6.2 6.2S8.6 1.4 5.2 1.4Z`},
+
+  /* --- Sommer ------------------------------------------------ */
+  sunFace:{
+    d:`M0-9.4A9.4 9.4 0 1 1 0 9.4 9.4 9.4 0 1 1 0-9.4Z`,
+    i:`M0-16.4v4.4M0 12v4.4M-16.4 0h4.4M12 0h4.4
+       M-11.6-11.6l3.2 3.2M8.4 8.4l3.2 3.2M11.6-11.6l-3.2 3.2M-8.4 8.4l-3.2 3.2
+       M-3.4-1.6a1 1 0 1 0 .1 0M3.4-1.6a1 1 0 1 0 .1 0M-3 3c1.8 1.8 4.2 1.8 6 0`,
+    f:`M0-8A8 8 0 1 1 0 8 8 8 0 1 1 0-8Z`},
+  lemon:{
+    d:`M-13-4.6C-9.6-11-4.4-14 2-14c7.4 0 12.6 4.4 12.6 10.6 0 6.8-5.6 11.8-13.4 11.8-8 0-13.8-4-13.8-9.6 0-.9.2-2 .6-3.4Z`,
+    i:`M12.6-8.6c2.2-1.4 3.6-3.2 4-5.4M-4 0c3.6-2.4 7.6-3 12-1.8M-2.4 5c3-2 6.4-2.6 10-1.6`,
+    f:`M-11.4-4.4C-8.4-10-3.8-12.6 2-12.6c6.6 0 11.2 3.8 11.2 9.2 0 6-5 10.4-11.8 10.4-7 0-12.2-3.4-12.2-8.4 0-.8.2-1.8.6-3Z`},
+  butterfly:{
+    d:`M0-8c-2.6-4.4-6.4-6.6-10.4-5.8-4 .8-6 4-5.2 8 .8 4 4 6.4 8.4 6.6-3.6 1.6-5.4 4.2-4.8 7.4.6 3 3.2 4.6 6.4 4 3.2-.6 5.2-3.2 5.6-7.2
+       M0-8c2.6-4.4 6.4-6.6 10.4-5.8 4 .8 6 4 5.2 8-.8 4-4 6.4-8.4 6.6 3.6 1.6 5.4 4.2 4.8 7.4-.6 3-3.2 4.6-6.4 4-3.2-.6-5.2-3.2-5.6-7.2Z`,
+    i:`M0-8v18M0-9.6c-.6-2.6-1.8-4.2-3.6-5M0-9.6c.6-2.6 1.8-4.2 3.6-5
+       M-8-6.6c-1.6 1.4-2.2 3-1.8 4.8M8-6.6c1.6 1.4 2.2 3 1.8 4.8`},
+  shell:{
+    d:`M0 12C-9.6 12-15 4.4-15-3.4c0-6.6 6.4-12.2 15-12.2S15-10 15-3.4C15 4.4 9.6 12 0 12Z`,
+    i:`M0 12V-15M-7 10.6C-8.6.4-7-8-3.8-13.6M7 10.6C8.6.4 7-8 3.8-13.6
+       M-12.4 4.2C-11.4-3.6-9-9.6-5.4-13M12.4 4.2C11.4-3.6 9-9.6 5.4-13`},
+  iceCream:{
+    d:`M-8-4 0 16l8-20Z`,
+    i:`M-5.6 1.4 3 4.6M-3.6 6 2 8M-8-4c0-5 3.6-8.6 8-8.6s8 3.6 8 8.6
+       M-4.6-6.6c0-3.4 2-5.6 4.6-5.6M0-12.6c-.4-2.4.8-3.8 3-4`,
+    f:`M-7.6-4.6c0-4.6 3.4-8 7.6-8s7.6 3.4 7.6 8Z`},
+  daisy:{
+    d:`M0 16V4`,
+    i:`M0 4c-2 0-3.6-1.6-3.6-3.6S-2-3.2 0-3.2s3.6 1.6 3.6 3.6S2 4 0 4Z
+       M0-3.4c-1.6-4.4-.8-7.6 2.4-9.2 2.6 3 2.4 6.4-.4 9.2M3.6 0c4.4-1.8 7.6-1 9.2 2.2-3 2.6-6.4 2.4-9.2-.4
+       M0 3.4c1.6 4.4.8 7.6-2.4 9.2-2.6-3-2.4-6.4.4-9.2M-3.6 0c-4.4 1.8-7.6 1-9.2-2.2 3-2.6 6.4-2.4 9.2.4
+       M0 12c-3.4-1-5.2-3-5.8-6`},
+  wave:{
+    d:`M-16-2c4.4-5.6 8.8-5.6 13.2 0S6-2 10.4-7.6c2.2-2.8 4-3.4 5.6-1.8`,
+    i:`M-16 6c4.4-5.6 8.8-5.6 13.2 0S6 6 10.4.4c2.2-2.8 4-3.4 5.6-1.8
+       M-16 14c4.4-5.6 8.8-5.6 13.2 0S6 14 10.4 8.4c2.2-2.8 4-3.4 5.6-1.8`},
+
+  /* --- Herbst ------------------------------------------------ */
+  leafOak:{
+    d:`M0 16V-2`,
+    i:`M0-2c-5.6-1-8.6-4-9-9 4.6-1.6 8 0 10 4.8-2.4-4.8-2-8.6 1-11.4 3.2 2.6 3.8 6.4 1.6 11.4 2.2-4.8 5.6-6.4 10-4.6-.4 5-3.4 8-9 9
+       M0 8c-3.2-.8-5-2.6-5.4-5.4`},
+  leafMaple:{
+    d:`M0 16V2`,
+    i:`M0 2 -4.4-3.4l-6.6 1.4 2.6-4.4-6-2.6 5-2-3.4-5.6 6 1.6.6-6 4.2 4.6 4.2-4.6.6 6 6-1.6-3.4 5.6 5 2-6 2.6 2.6 4.4-6.6-1.4Z`,
+    f:`M0 1.4-3.8-3l-5.6 1.2 2.2-3.8-5-2.2 4.2-1.6-2.8-4.8 5 1.4.6-5 3.6 3.8 3.6-3.8.6 5 5-1.4-2.8 4.8 4.2 1.6-5 2.2 2.2 3.8-5.6-1.2Z`},
+  acorn:{
+    d:`M-8-2c0 8.6 3.6 16.4 8 16.4S8 6.6 8-2Z`,
+    i:`M-10.4-2c0-4.4 4.6-8 10.4-8s10.4 3.6 10.4 8ZM0-10v-5.6
+       M-7-4.6c4.6-1 9.4-1 14 0M-5.6-8.2c3.6-.8 7.6-.8 11.2 0`,
+    f:`M-7-1c0 7.4 3.2 14 7 14s7-6.6 7-14Z`},
+  pumpkin:{
+    d:`M0-8c-7.8 0-13.4 4.4-13.4 10.6S-7.8 14 0 14s13.4-5.2 13.4-11.4S7.8-8 0-8Z`,
+    i:`M-5.6-6.8c-3.2 4-3.2 13.4 0 19M5.6-6.8c3.2 4 3.2 13.4 0 19M0-7.4v20.8
+       M0-8v-5.4c0-2.6 2.8-4 5.6-3.2`,
+    f:`M0-6.6c-6.6 0-11.4 3.8-11.4 9.2S-6.6 12.6 0 12.6s11.4-4.6 11.4-10S6.6-6.6 0-6.6Z`},
+  book:{
+    d:`M-14-10.4c4.6-2 9.2-2 14 0 4.8-2 9.4-2 14 0v18.8c-4.6-2-9.2-2-14 0-4.8-2-9.4-2-14 0Z`,
+    i:`M0-10.4V8.4M-10.6-6.2c2.6-1 5.2-1.2 8-.6M-10.6-1.4c2.6-1 5.2-1.2 8-.6
+       M2.6-6.8c2.8-.6 5.4-.4 8 .6M2.6-2c2.8-.6 5.4-.4 8 .6`},
+  candle:{
+    d:`M-6 0h12v13.4c0 1.6-1.2 2.6-6 2.6s-6-1-6-2.6Z`,
+    i:`M0 0c-4-4.6 0-8.4 0-11.6 0 3.2 4 7 0 11.6ZM0-11.6v-3.4M-6 4.4h12`,
+    f:`M-4.8 1.2h9.6v12.2c0 1.2-1 2-4.8 2s-4.8-.8-4.8-2Z`},
+  coffee:{
+    d:`M-9.6-2h16.4c.4 6.4-.6 11.4-3 15H-6.6c-2.4-3.6-3.4-8.6-3-15Z`,
+    i:`M6.8.6c3.4-.6 5.2.6 5.4 3.2.2 2.6-1.4 4.2-5 4.4
+       M-3.4-5.6c-1.4-2.6.6-4 .2-6.6M2.6-5.6c-1.4-2.6.6-4 .2-6.6`,
+    f:`M-8.4-.8h14c.4 5.6-.4 10-2.6 13.2H-5.8c-2.2-3.2-3-7.6-2.6-13.2Z`},
+
+  /* --- Spätherbst & Winter ----------------------------------- */
+  teabag:{
+    d:`M-7 0h14v13.4h-14Z`,
+    i:`M0 0v-6.4c0-3.6-2.6-5.6-6.6-6.2M-6.6-13.6a1.8 1.8 0 1 0 .1 0
+       M-4.4 4.6h8.8M-4.4 8.4h6`,
+    f:`M-5.8 1.2h11.6v11h-11.6Z`},
+  blanket:{
+    d:`M-15-6c5-2.6 10-2.6 15 0 5-2.6 10-2.6 15 0v9c-5 2.6-10 2.6-15 0-5 2.6-10 2.6-15 0Z`,
+    i:`M-15-1.4c5-2.6 10-2.6 15 0 5-2.6 10-2.6 15 0M-8-4.4v9M0-6v9M8-4.4v9
+       M-15 3c-.4 2.6-.4 4.6 0 6M15 3c.4 2.6.4 4.6 0 6`},
+  bow:{
+    d:`M0 0c-3.6-5-7.4-7-11.4-6-3.4.8-4.8 3.6-3.6 6.8 1.2 3.2 5.2 4.6 11 3.8
+       M0 0c3.6-5 7.4-7 11.4-6 3.4.8 4.8 3.6 3.6 6.8-1.2 3.2-5.2 4.6-11 3.8Z`,
+    i:`M0 0a2.6 2.6 0 1 0 .1 0M-1.6 2.6-5.6 14M1.6 2.6 5.6 14
+       M-9.6-3.2c-1.6.6-2.2 1.8-1.8 3.4M9.6-3.2c1.6.6 2.2 1.8 1.8 3.4`},
+  ornament:{
+    d:`M0-6A11 11 0 1 1 0 16 11 11 0 1 1 0-6Z`,
+    i:`M-3.4-7.6h6.8v-3.4h-6.8ZM0-11v-3.4c0-1.4 1.4-2 3-1.4
+       M-9.6 1c5-2.6 9.6-2.6 14.4 0M-10.4 6.4c6-2.6 11.6-2.6 17 0`,
+    f:`M0-4.6A9.6 9.6 0 1 1 0 14.6 9.6 9.6 0 1 1 0-4.6Z`},
+  pineBranch:{
+    d:`M-15 6C-6 3 4 0 15-6`,
+    i:`M-10.6 4.4c-1.4-3.6-.6-6.4 2.4-8.4 2 3 1.8 5.8-.6 8.4M-4.6 2.4c-1.4-3.6-.6-6.4 2.4-8.4 2 3 1.8 5.8-.6 8.4
+       M1.4.2c-1.4-3.6-.6-6.4 2.4-8.4 2 3 1.8 5.8-.6 8.4M7.4-2.2c-1.4-3.6-.6-6.4 2.4-8.4 2 3 1.8 5.8-.6 8.4
+       M-8.6 5.4c1.4 3.4.8 6-1.8 7.8-1.8-2.8-1.6-5.4.4-7.8M-1.6 3c1.4 3.4.8 6-1.8 7.8-1.8-2.8-1.6-5.4.4-7.8
+       M4.4.6c1.4 3.4.8 6-1.8 7.8-1.8-2.8-1.6-5.4.4-7.8`},
+
+  /* --- Universell -------------------------------------------- */
+  heart:{
+    d:`M0 14.6C-10.6 7.4-15 2-15-3.6-15-8.4-11.4-12-6.8-12-4 -12-1.4-10.4 0-8c1.4-2.4 4-4 6.8-4C11.4-12 15-8.4 15-3.6 15 2 10.6 7.4 0 14.6Z`,
+    i:`M-9.6-7.4c-1.6.8-2.4 2.2-2.4 4.2`,
+    f:`M0 12.6C-9.4 6-13.4 1.2-13.4-3.6c0-4 3-7 7-7 2.4 0 4.8 1.4 6.4 3.6 1.6-2.2 4-3.6 6.4-3.6 4 0 7 3 7 7 0 4.8-4 9.6-13.4 16.2Z`},
+  moonSlim:{
+    d:`M5-13.6A14 14 0 1 0 5 13.6 17 17 0 0 1 5-13.6Z`,
+    i:`M-2.4-6.6a1.4 1.4 0 1 0 .1 0M-5.4 2a1.2 1.2 0 1 0 .1 0`,
+    f:`M4.4-11.6A12 12 0 1 0 4.4 11.6 14.6 14.6 0 0 1 4.4-11.6Z`},
+  sparkle:{
+    d:`M0-14c1.4 8.2 4.4 12.6 12 14-7.6 1.4-10.6 5.8-12 14-1.4-8.2-4.4-12.6-12-14 7.6-1.4 10.6-5.8 12-14Z`,
+    i:``,
+    f:`M0-12c1.2 7 3.8 10.8 10.2 12C3.8 1.2 1.2 5 0 12c-1.2-7-3.8-10.8-10.2-12C-3.8-1.2-1.2-5 0-12Z`}
 };
 
-const MOTIF_SOLID = {heart:1, drop:1, star:1, leaf:1, acorn:1, tea:1, snow:0, bud:0, bloom:0, sun:0, wave:0, flower:0};
-
-/** Ein Moodtracker-Element. `fill` = Farbe der gewählten Stimmung (oder null). */
-function motifSVG(name, fill, stroke){
-  const solid = MOTIF_SOLID[name];
-  const f = fill || "none";
-  return `<svg viewBox="0 0 40 40" fill="none" stroke="${stroke}" stroke-width="1.7"
-    stroke-linecap="round" stroke-linejoin="round" filter="url(#rough2)">
-    ${solid
-      ? `<g class="fillp-g" fill="${f}" fill-opacity="${fill?1:0}">${MOTIF[name]}</g>`
-      : `<g fill="none">${MOTIF[name]}</g>
-         ${fill ? `<circle class="fillp" cx="20" cy="20" r="7.2" fill="${f}" fill-opacity=".62" stroke="none"/>` : ""}`}
+/** Ein Motiv als SVG. `fill` füllt die Fläche (Moodtracker), sonst nur Kontur. */
+function motif(name, opt = {}){
+  const a = ART[name];
+  if (!a) return "";
+  const w = opt.w ?? 1;
+  return `<svg viewBox="-20 -20 40 40" fill="none" stroke="${opt.stroke || "currentColor"}"
+    stroke-width="${1.55 * w}" stroke-linecap="round" stroke-linejoin="round"
+    ${opt.cls ? `class="${opt.cls}"` : ""} ${opt.filter === false ? "" : `filter="url(#ink)"`}>
+    ${opt.fill && a.f ? `<path class="fillp" d="${a.f}" fill="${opt.fill}" fill-opacity="${opt.fo ?? .9}" stroke="none"/>` : ""}
+    ${opt.fill && !a.f ? `<circle class="fillp" r="6.4" fill="${opt.fill}" fill-opacity=".55" stroke="none"/>` : ""}
+    <path d="${a.d}" stroke-width="${1.85 * w}"/>
+    ${a.i ? `<path d="${a.i}" stroke-width="${1.15 * w}" stroke-opacity=".88"/>` : ""}
   </svg>`;
 }
 
-/* --- Bausteine für die Monatsdeckblätter --------------------- */
-const PART = {
-  sprig:  `<path d="M0 0C2 -14 6 -26 12 -36" /><path d="M2.4 -8c-6 -1.4-8.6-5-8-9.4 4.6-.4 8 2 9 6.6M4.4 -16c-5.6-2.4-7.4-6.4-6-10.6 4.4.6 7.2 3.6 7.4 8M7 -24c-4.6-3-5.6-7-3.6-10.6 3.8 1.4 5.6 4.8 5 9M3.6 -11c5.4-3 9-2.4 11.4 1.2-3 3.4-7 3.8-10.8 1.4M6 -19.6c5-3.6 8.6-3.4 11.4 0-2.6 3.6-6.4 4.4-10.4 2.4"/>`,
-  branch: `<path d="M0 0C10 -3 22 -6 34 -6"/><path d="M8 -1.6c-1-4 .4-7 3.6-8.6 1.8 3.6 1.2 6.8-1.6 9M16 -3.4c-1.2-4 0-7.2 3.2-9 2 3.4 1.6 6.8-1 9.2M24 -4.8c-1.2-4 .2-7.2 3.4-8.8 1.8 3.4 1.2 6.8-1.4 9M12 -2.6c-.6 4-3 6.4-6.6 6.6-.2-3.8 1.8-6.4 5.4-7.4M20 -4c-.6 4-3 6.4-6.6 6.6-.2-3.8 1.8-6.4 5.4-7.4"/>`,
-  flowerB:`<circle cx="0" cy="0" r="3.4"/><path d="M0-3.4c-1.8-4.4-.8-7.6 2.4-8.8 2.4 3 2.2 6.2-.4 8.8M3.4 0c4.4-1.8 7.6-.8 8.8 2.4-3 2.4-6.2 2.2-8.8-.4M0 3.4c1.8 4.4.8 7.6-2.4 8.8-2.4-3-2.2-6.2.4-8.8M-3.4 0c-4.4 1.8-7.6.8-8.8-2.4 3-2.4 6.2-2.2 8.8.4"/>`,
-  leafB:  `<path d="M0 0C-2 -8 2 -15 10 -18 11 -10 7 -3 0 0Z"/><path d="M0 0C2.6-5 5.6-9 9.4-12"/>`,
-  cup:    `<path d="M-9 -8h18l-2 15H-7Z"/><path d="M9 -5c3.4 0 5 1.6 5 4s-1.6 4-5 4"/><path d="M-11 7h22"/><path d="M-3 -13c0-2.4 2-3 2-5M3 -13c0-2.4 2-3 2-5"/>`,
-  candle: `<path d="M-5 -2h10v16h-10Z"/><path d="M0 -2c-3.4-4 0-7.4 0-10 0 2.6 3.4 6 0 10Z"/><path d="M0 -12v-3"/>`,
-  moonS:  `<path d="M6 -12A11 11 0 1 0 6 10 13.5 13.5 0 0 1 6 -12Z"/>`,
-  pumpkin:`<path d="M0 -8c-7 0-12 4-12 9.5S-7 12 0 12s12-5 12-10.5S7 -8 0 -8Z"/><path d="M-5 -7c-3 3.6-3 12 0 17M5 -7c3 3.6 3 12 0 17"/><path d="M0 -8v-5c0-2.4 2.6-3.6 5-3"/>`,
-  tree:   `<path d="M0 -20 -9 -6h5l-7 10h7l-6 9h20l-6-9h7l-7-10h5Z"/><path d="M0 -7v20"/>`,
-  shell:  `<path d="M0 10C-9 10-14 3-14-4c0-6 6-11 14-11S14-10 14-4c0 7-5 14-14 14Z"/><path d="M0 10V-15M-6.5 8.6C-8-1-6.6-9-3.6-14M6.5 8.6C8-1 6.6-9 3.6-14"/>`,
-  seed:   `<path d="M0 12V-2"/><path d="M0 -2c-4.4 0-7-3-7-6.6 0-2.6 1.6-4.6 3.6-4.6 2.4 0 3.4 2.4 3.4 5 0-2.6 1-5 3.4-5 2 0 3.6 2 3.6 4.6C7 -5 4.4-2 0-2Z"/><path d="M0 6c-3-.8-4.4-2.4-4.8-5.2"/>`,
-  rain:   `<path d="M-14 0c-3.4 0-6-2.6-6-6s2.6-6 6-6c.4-4.4 4-7.6 8.4-7.6 3.6 0 6.8 2.2 8 5.4 1-.6 2.2-1 3.6-1 4 0 7.2 3.2 7.2 7.2S9-.4 5-.4Z"/><path d="M-9 6l-2.6 6M-1 6l-2.6 6M7 6l-2.6 6"/>`,
-  wreath: `<circle cx="0" cy="0" r="30" stroke-dasharray="0.1 7.6" stroke-linecap="round"/>`
-};
+/* ============================================================
+   MONATSTHEMEN
+   Jeder Monat bekommt eine eigene Illustrationsfamilie, ein
+   eigenes Moodtracker-Motiv samt Anordnung und eine eigene
+   Deckblatt-Komposition. Die Farbwelt liegt in MONTHS (§2).
+   ============================================================ */
 
-/** Monatsdeckblatt-Szenen: Position/Rotation/Größe je Baustein. */
-const SCENE = {
-  jan:[["moonS",78,20,1.5,10],["snowflake",22,26,1,0],["sprig",24,86,1.15,-8],["sprig",76,84,1.05,12]],
-  feb:[["flowerB",20,24,1.5,0],["flowerB",82,30,1.2,20],["branch",14,80,1.1,-6],["flowerB",78,80,1.35,-14]],
-  mar:[["seed",22,74,1.5,-6],["seed",34,80,1.15,8],["sprig",78,80,1.25,10],["branch",70,22,.95,4]],
-  apr:[["rain",26,22,1.25,0],["flowerB",76,78,1.3,12],["seed",18,80,1.2,-8],["rain",78,28,.85,6]],
-  may:[["flowerB",18,28,1.6,-10],["flowerB",30,20,1.1,18],["flowerB",80,74,1.5,8],["branch",72,26,1,-4]],
-  jun:[["sunB",76,22,1,0],["flowerB",20,78,1.45,-8],["leafB",30,84,1.3,14],["flowerB",84,80,1.05,10]],
-  jul:[["shell",78,78,1.15,-8],["waveB",20,80,1,0],["sunB",24,22,.85,0],["shell",16,72,.8,14]],
-  aug:[["flowerB",22,26,1.5,6],["leafB",80,26,1.3,-12],["shell",80,80,1,10],["sprig",20,84,1.1,-6]],
-  sep:[["leafB",22,24,1.5,-14],["seed",78,78,1.3,8],["branch",16,80,1.05,2],["leafB",82,30,1.15,22]],
-  oct:[["pumpkin",78,76,1.15,-6],["leafB",20,26,1.5,10],["leafB",26,80,1.2,-24],["branch",76,24,1,-8]],
-  nov:[["cup",76,78,1.3,-4],["rain",24,24,1.1,0],["leafB",18,80,1.15,16],["candle",84,26,1,0]],
-  dec:[["tree",78,76,1.1,0],["star",22,24,1,0],["candle",20,80,1.2,0],["sprig",80,26,1.05,-14]]
-};
+const THEME = [
+  { mood:"snowflake", layout:"drift",  thema:"Stille",
+    deco:[["firSprig",10,74,1.5,-16],["moonSlim",86,17,1.15,0],["starFive",22,20,.55,0],
+          ["starFive",30,13,.38,0],["mug",84,80,1.2,4],["snowflake",68,10,.5,0]],
+    kranz:["firSprig","starFive","snowflake"] },
 
-/** Nicht jeder Baustein ist um den Nullpunkt gezeichnet – hier gerade rücken. */
-const OFF = {sprig:"-4,17", branch:"-17,2", leafB:"-5,8", seed:"0,-4",
-             candle:"0,-5", tree:"0,4", rain:"0,-3", moonS:"-3,1"};
+  { mood:"heart", layout:"rows", thema:"Wärme",
+    deco:[["heart",13,20,.85,-12],["bow",85,76,1.15,6],["daisy",88,20,.9,10],
+          ["heart",22,80,1.1,8],["sparkle",74,14,.45,0],["daisy",12,72,.7,-8]],
+    kranz:["heart","daisy","bow"] },
 
-/** Zusatzformen, die als Szenenteil per Name auflösen. */
-function partPath(name){
-  const wrap = p => OFF[name] ? `<g transform="translate(${OFF[name]})">${p}</g>` : p;
-  if (PART[name]) return wrap(PART[name]);
-  if (name === "snowflake") return MOTIF.snow.replace(/^<path d="/, '<path transform="translate(-20,-20)" d="');
-  if (name === "star")      return MOTIF.star.replace(/^<path d="/, '<path transform="translate(-20,-20)" d="');
-  if (name === "sunB")      return `<circle cx="0" cy="0" r="9"/><path d="M0-16v5M0 11v5M-16 0h5M11 0h5M-11.3-11.3l3.5 3.5M7.8 7.8l3.5 3.5M11.3-11.3l-3.5 3.5M-7.8 7.8l-3.5 3.5"/>`;
-  if (name === "waveB")     return `<path d="M-16 0c4-5 8-5 12 0s8 5 12 0M-16 8c4-5 8-5 12 0s8 5 12 0"/>`;
-  return "";
+  { mood:"bud", layout:"rows", thema:"Anfang",
+    deco:[["bud",14,74,1.4,-6],["birdling",84,22,1.15,0],["bud",26,82,1,10],
+          ["tulip",88,74,1.2,4],["sparkle",70,16,.4,0],["bud",76,84,.8,-12]],
+    kranz:["bud","tulip","birdling"] },
+
+  { mood:"raincloud", layout:"drift", thema:"Geduld",
+    deco:[["umbrella",84,22,1.3,8],["raincloud",16,20,1.1,0],["tulip",14,78,1.15,-8],
+          ["bud",86,80,1,6],["raincloud",70,76,.7,0],["birdling",26,86,.7,0]],
+    kranz:["umbrella","tulip","raincloud"] },
+
+  { mood:"daisy", layout:"scatter", thema:"Aufblühen",
+    deco:[["daisy",12,24,1.35,-14],["butterfly",84,20,1.15,12],["daisy",20,80,1.15,8],
+          ["tulip",88,78,1.2,-6],["butterfly",72,86,.7,-10],["daisy",90,46,.6,0]],
+    kranz:["daisy","butterfly","tulip"] },
+
+  { mood:"sunFace", layout:"arc", thema:"Leichtigkeit",
+    deco:[["sunFace",85,18,1.25,0],["lemon",14,76,1.25,-12],["daisy",16,22,.95,10],
+          ["lemon",86,80,.85,14],["butterfly",70,84,.75,8],["sparkle",26,14,.42,0]],
+    kranz:["sunFace","lemon","daisy"] },
+
+  { mood:"wave", layout:"tide", thema:"Freiheit",
+    deco:[["shell",86,80,1.2,-10],["sunFace",18,18,1.05,0],["iceCream",86,20,1.1,8],
+          ["shell",13,74,.85,14],["wave",50,92,1.3,0],["sparkle",74,12,.4,0]],
+    kranz:["shell","sunFace","wave"] },
+
+  { mood:"lemon", layout:"scatter", thema:"Fülle",
+    deco:[["lemon",14,22,1.3,-8],["leafOak",86,22,1.15,14],["shell",86,80,1,10],
+          ["daisy",18,80,1.05,-6],["sunFace",74,88,.7,0],["lemon",90,50,.6,12]],
+    kranz:["lemon","leafOak","daisy"] },
+
+  { mood:"leafOak", layout:"rows", thema:"Sammeln",
+    deco:[["book",84,78,1.3,-6],["leafOak",14,20,1.2,-18],["coffee",14,78,1.1,6],
+          ["leafOak",86,20,1,22],["acorn",74,88,.75,-8],["sparkle",24,14,.4,0]],
+    kranz:["leafOak","book","acorn"] },
+
+  { mood:"leafMaple", layout:"scatter", thema:"Gemütlich",
+    deco:[["pumpkin",85,78,1.25,-6],["leafMaple",14,20,1.25,12],["leafMaple",22,82,1,-22],
+          ["candle",87,20,1.05,0],["acorn",72,88,.75,10],["leafOak",90,48,.65,-14]],
+    kranz:["pumpkin","leafMaple","acorn"] },
+
+  { mood:"teabag", layout:"hang", thema:"Ruhe",
+    deco:[["mug",84,80,1.3,-4],["raincloud",16,18,1.1,0],["blanket",14,80,1.2,4],
+          ["candle",88,20,1,0],["teabag",72,88,.7,8],["leafMaple",26,86,.6,-16]],
+    kranz:["mug","teabag","blanket"] },
+
+  { mood:"starFive", layout:"drift", thema:"Licht",
+    deco:[["pineBranch",13,76,1.4,-8],["ornament",86,20,1.15,4],["starFive",22,18,.6,0],
+          ["candle",86,80,1.15,0],["bow",72,88,.7,-8],["starFive",70,12,.42,0]],
+    kranz:["pineBranch","starFive","ornament"] }
+];
+
+/* --- Kompositionen ------------------------------------------ */
+
+/** Verstreute Deko einer Seite. `op` steuert die Zurückhaltung. */
+function scene(m, opt = {}){
+  const t = THEME[m], base = opt.size ?? 78;
+  const items = (opt.only ? t.deco.slice(0, opt.only) : t.deco);
+  return `<div class="scene" aria-hidden="true" style="opacity:${opt.op ?? .42}">
+    ${items.map(([n, x, y, sc, rot]) => `
+      <span class="deco" style="left:${x}%;top:${y}%;width:${Math.round(base * sc)}px;
+        transform:translate(-50%,-50%) rotate(${rot}deg)">${motif(n, {w:.9})}</span>`).join("")}
+  </div>`;
 }
 
-/** Deckblatt-Illustration: jedes Element ein eigenes, unverzerrtes SVG. */
-function monthScene(m, opt = {}){
-  const s = SCENE[MONTHS[m].art] || [];
-  const base = opt.size ?? 82;
-  const parts = s.map(([n, x, y, sc, rot]) =>
-    `<svg viewBox="-40 -40 80 80" fill="none" stroke="currentColor" stroke-width="1.5"
-      stroke-linecap="round" stroke-linejoin="round" filter="url(#rough)"
-      style="left:${x}%;top:${y}%;width:${Math.round(base * sc)}px;height:${Math.round(base * sc)}px;
-             transform:translate(-50%,-50%) rotate(${rot}deg)">${partPath(n)}</svg>`).join("");
-  return `<div class="scene" aria-hidden="true" style="opacity:${opt.op ?? .5}">${parts}</div>`;
+/** Kranz aus drei Motiven — für Deckblätter. */
+function wreath(names, opt = {}){
+  const r = opt.r ?? 47, n = opt.count ?? 16;
+  const parts = Array.from({length:n}, (_, i) => {
+    const deg = (i / n) * 360;                          // 0° = oben, im Uhrzeigersinn
+    if (opt.gap && (deg < 28 || deg > 332)) return "";  // Lücke oben, damit der Titel frei steht
+    const a = (deg - 90) * Math.PI / 180;
+    const x = Math.cos(a) * r, y = Math.sin(a) * r;
+    const nm = names[i % names.length];
+    const sc = .3 + (i % 3) * .045;
+    // non-scaling-stroke: die Linie bleibt fein, egal wie klein das Motiv skaliert ist
+    return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${deg.toFixed(0)}) scale(${sc})">
+      <path d="${ART[nm].d}" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+      ${ART[nm].i ? `<path d="${ART[nm].i}" stroke-width="1" stroke-opacity=".75"
+        vector-effect="non-scaling-stroke"/>` : ""}
+    </g>`;
+  }).join("");
+  return `<svg viewBox="-58 -58 116 116" fill="none" stroke="currentColor"
+    stroke-linecap="round" stroke-linejoin="round" filter="url(#ink)" aria-hidden="true">${parts}</svg>`;
 }
 
-/* --- Zierstriche & Rahmen ------------------------------------ */
-const STROKE_SVG = `<svg class="stroke" viewBox="0 0 300 9" fill="none" stroke="currentColor"
-  stroke-width="2.2" stroke-linecap="round" preserveAspectRatio="none" filter="url(#rough2)">
-  <path d="M2 5.5c46-3.4 92-4 138-2.4 44 1.6 88 2 158-.6"/></svg>`;
+/** Eckbordüre — zwei Zweige, die eine Ecke rahmen. */
+function corner(name, opt = {}){
+  return `<svg viewBox="-20 -20 40 40" fill="none" stroke="currentColor" stroke-width="1.7"
+    stroke-linecap="round" stroke-linejoin="round" filter="url(#ink)" aria-hidden="true"
+    style="${opt.style || ""}">
+    <g transform="rotate(${opt.rot ?? 0})">
+      <path d="${ART[name].d}"/>${ART[name].i ? `<path d="${ART[name].i}" stroke-width="1.15" stroke-opacity=".85"/>` : ""}
+    </g></svg>`;
+}
 
-const FRAME_SVG = `<svg viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor"
-  stroke-width=".4" filter="url(#rough)" style="position:absolute;inset:0;width:100%;height:100%"
-  vector-effect="non-scaling-stroke">
-  <path d="M2.4 2.6h95.2v94.8H2.4Z"/><path d="M4 4.2h92v91.6H4Z" stroke-width=".22"/></svg>`;
+/* --- Gezeichnete Linien & Rahmen ----------------------------- */
 
-const CHECK_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-  stroke-linecap="round" stroke-linejoin="round" filter="url(#rough2)"><path d="m4 12.5 5.2 5.4L20 6.2"/></svg>`;
+/** Zierstrich unter einer Überschrift — leicht ungleichmäßig geführt. */
+const RULE = `<svg class="stroke" viewBox="0 0 300 10" fill="none" stroke="currentColor"
+  stroke-linecap="round" preserveAspectRatio="none" filter="url(#ink)" aria-hidden="true">
+  <path d="M3 6.2c48-3.8 96-4.6 144-2.6 46 1.8 92 2.4 150-.8" stroke-width="2.4"/>
+  <path d="M8 8.6c44-2.4 88-3 132-1.6" stroke-width="1" stroke-opacity=".45"/></svg>`;
 
-const HEART_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21C5.4 16.5 3 13.2 3 9.9 3 7.2 5 5.2 7.5 5.2c1.7 0 3.3 1 4.5 2.6 1.2-1.6 2.8-2.6 4.5-2.6C19 5.2 21 7.2 21 9.9c0 3.3-2.4 6.6-9 11.1Z"/></svg>`;
+/** Doppelter Papierrahmen fürs Deckblatt. */
+const FRAME = `<svg class="frame" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none"
+  stroke="currentColor" filter="url(#ink)" vector-effect="non-scaling-stroke" aria-hidden="true">
+  <path d="M2.2 2.4h95.6v95.2H2.2Z" stroke-width=".45"/>
+  <path d="M3.6 4h92.8v92" stroke-width=".2"/>
+  <path d="M3.6 4v92h92.8" stroke-width=".2"/></svg>`;
 
-const PLUS_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-  stroke-linecap="round" filter="url(#rough2)"><path d="M12 5.5v13M5.5 12h13"/></svg>`;
+/** Handgezogene Trennlinie zwischen zwei Bereichen. */
+const DIV = `<svg class="divider" viewBox="0 0 200 6" fill="none" stroke="currentColor"
+  stroke-width="1.4" stroke-linecap="round" preserveAspectRatio="none" filter="url(#ink)" aria-hidden="true">
+  <path d="M2 3.4c32-2 64-2.4 96-1.2 30 1.2 60 1.6 100-.4"/></svg>`;
 
-const X_SVG = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
-  stroke-width="2.4" stroke-linecap="round" filter="url(#rough2)"><path d="M6 6l12 12M18 6 6 18"/></svg>`;
+/* --- Kleine UI-Zeichen --------------------------------------- */
+const ic = (p, o = {}) => `<svg viewBox="0 0 24 24" width="${o.s || 16}" height="${o.s || 16}"
+  fill="none" stroke="currentColor" stroke-width="${o.w || 1.9}" stroke-linecap="round"
+  stroke-linejoin="round" ${o.f === false ? "" : 'filter="url(#ink)"'} aria-hidden="true">${p}</svg>`;
 
-const PEN_SVG = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"
-  stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.6 2.6 0 0 0-3.7-3.7L4 16.3Z"/></svg>`;
+const CHECK_SVG = ic(`<path d="M4 12.8c2.2 1.4 3.8 3 4.8 5C11.4 12.4 15 7.8 20 4.6"/>`, {w:2.7, s:24});
+const X_SVG     = ic(`<path d="M6.4 6.2 17.6 17.8M17.6 6.2 6.4 17.8"/>`, {w:2.2, s:12});
+const PEN_SVG   = ic(`<path d="M4 20.2c.6-2 1-3.4 1.2-4.2L17 4.4c1-1 2.4-1 3.4 0s1 2.4 0 3.4L8.6 19.4c-.8.2-2.2.6-4.6.8Z"/><path d="m15.4 6.6 3 3" stroke-width="1.2"/>`, {s:13});
+const CAM_SVG   = ic(`<path d="M3.2 8.8c3-.4 4.4-.4 4.6-.6.4-.4 1-1.4 1.6-2.2h5.2c.6.8 1.2 1.8 1.6 2.2.2.2 1.6.2 4.6.6.4 3.6.4 7.2 0 10.8-6.2.6-11.4.6-17.6 0-.4-3.6-.4-7.2 0-10.8Z"/><path d="M12 10.2c2 0 3.6 1.6 3.6 3.6S14 17.4 12 17.4s-3.6-1.6-3.6-3.6S10 10.2 12 10.2Z" stroke-width="1.3"/>`, {s:22, w:1.6});
+const NOTE_SVG  = ic(`<path d="M9.4 17.6V5.2l9.6-1.8v12"/><path d="M9.4 8.4 19 6.6" stroke-width="1.2"/><path d="M9.4 17.6c0 1.4-1.4 2.4-3.2 2.4S3 19 3 17.6s1.4-2.4 3.2-2.4 3.2 1 3.2 2.4ZM19 15.2c0 1.4-1.4 2.4-3.2 2.4s-3.2-1-3.2-2.4 1.4-2.4 3.2-2.4 3.2 1 3.2 2.4Z"/>`, {s:20, w:1.6});
+const PLUS_SVG  = ic(`<path d="M12 5.2v13.6M5.2 12h13.6"/>`, {w:2.1});
+const ARROW_SVG = ic(`<path d="M4 12.2c5.6-.4 11-.4 16 0M14.4 7.2c1.8 2 3.6 3.6 5.6 5-2 1.4-3.8 3-5.6 5"/>`, {w:1.8});
 
-const CAM_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
-  stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" filter="url(#rough2)">
-  <path d="M3 8.5h4l1.6-2.4h6.8L17 8.5h4v11H3Z"/><circle cx="12" cy="13.6" r="3.7"/></svg>`;
+/** Herz für die Song-Bewertung — gefüllt oder offen. */
+const HEART_SVG = `<svg viewBox="-16 -16 32 32" fill="none" stroke="currentColor" stroke-width="2.2"
+  stroke-linejoin="round" filter="url(#ink)" aria-hidden="true">
+  <path class="hf" d="${ART.heart.f}" fill="currentColor" stroke="none"/>
+  <path d="${ART.heart.d}"/></svg>`;
 
-const NOTE_SVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-  stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" filter="url(#rough2)">
-  <path d="M9 18V5.5l10-2V16"/><ellipse cx="6.6" cy="18.4" rx="3" ry="2.4"/><ellipse cx="16.6" cy="16.4" rx="3" ry="2.4"/></svg>`;
+/* --- Aufkleber ----------------------------------------------
+   Gezeichnet statt Emoji: jeder Sticker ist ein Motiv mit
+   eigener Farbe, das sich ins Papier einfügt.
+   ------------------------------------------------------------ */
+const STICKERS = [
+  {id:"heart",     n:"Herz",         c:"#C4788B"},
+  {id:"starFive",  n:"Stern",        c:"#CF9A3C"},
+  {id:"daisy",     n:"Blume",        c:"#AE6A92"},
+  {id:"leafOak",   n:"Blatt",        c:"#8A8455"},
+  {id:"mug",       n:"Tasse",        c:"#7A5C52"},
+  {id:"sparkle",   n:"Funkeln",      c:"#CF9A3C"},
+  {id:"butterfly", n:"Schmetterling",c:"#6B9F9C"},
+  {id:"moonSlim",  n:"Mond",         c:"#7C9BB5"},
+  {id:"snowflake", n:"Schneeflocke", c:"#7C9BB5"},
+  {id:"lemon",     n:"Zitrone",      c:"#CF9A3C"},
+  {id:"pumpkin",   n:"Kürbis",       c:"#B25A2E"},
+  {id:"bow",       n:"Schleife",     c:"#C4788B"},
+  {id:"shell",     n:"Muschel",      c:"#3D9698"},
+  {id:"candle",    n:"Kerze",        c:"#B25A2E"},
+  {id:"book",      n:"Buch",         c:"#4E6B55"},
+  {id:"teabag",    n:"Teebeutel",    c:"#7A5C52"},
+  {id:"birdling",  n:"Vogel",        c:"#6B9F9C"},
+  {id:"pineBranch",n:"Tannenzweig",  c:"#4E6B55"}
+];
 
-/** Deko-Sticker fürs Journal (Emoji – bewusst klein gehalten). */
-const STICKERS = ["✿","❀","☘","✧","★","☾","☕","✈","♡","☂","❄","☀","🍂","🎂","🎧","📖","🕯","🌿"];
+/** Ein Aufkleber, wie er auf der Seite klebt. */
+function sticker(id, opt = {}){
+  const s = STICKERS.find(x => x.id === id) || STICKERS[0];
+  return `<span class="stickr" style="--sc:${s.c};${opt.style || ""}"
+    title="${esc(s.n)}">${motif(s.id, {w:1.05})}</span>`;
+}
+
+/** Die zur Jahreszeit passenden Aufkleber zuerst. */
+function stickersFor(m){
+  const t = THEME[m];
+  const nah = new Set([t.mood, ...t.deco.map(d => d[0])]);
+  return [...STICKERS].sort((a, b) => (nah.has(b.id) ? 1 : 0) - (nah.has(a.id) ? 1 : 0));
+}
+
 
 /* ============================================================
    6 · SEITEN — JAHRESTEIL
@@ -338,37 +594,27 @@ const head = (title, sub) => `
   <div class="title-row">
     <h2 class="page-title">${esc(title)}</h2>
   </div>
-  ${STROKE_SVG}
+  ${RULE}
   ${sub ? `<p class="page-sub">${esc(sub)}</p>` : ""}`;
 
 /* --- Deckblatt ---------------------------------------------- */
 function pgCover(){
-  return `<div class="cover" style="--accent:#8A8455">
-    ${FRAME_SVG}
-    <div class="scene" style="opacity:.3">
-      ${[["sprig",9,80,1.1,-14],["sprig",91,82,1,16],["leafB",13,17,.85,-30],
-         ["leafB",88,15,.8,34],["flowerB",6,50,.7,0],["flowerB",94,48,.65,0]]
-        .map(([n,x,y,sc,r]) => `<svg viewBox="-40 -40 80 80" fill="none" stroke="currentColor"
-          stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#rough)"
-          style="left:${x}%;top:${y}%;width:${Math.round(76*sc)}px;height:${Math.round(76*sc)}px;
-                 transform:translate(-50%,-50%) rotate(${r}deg)">${partPath(n)}</svg>`).join("")}
+  return `<div class="cover" style="--accent:#7E7A4E">
+    ${FRAME}
+    <div class="cover-wreath">${wreath(["daisy","leafOak","bud","sparkle","leafMaple"], {r:41, count:18, gap:true})}</div>
+    <div class="cover-inner">
+      <p class="kicker">Ein Buch für dich</p>
+      <div class="yr">2027</div>
+      <p class="for">Für</p>
+      <div class="who"><input class="w plain" data-f="meta.name" value="${esc(S.meta.name)}" aria-label="Name"></div>
+      <div class="motto"><input class="w" data-f="meta.motto" value="${esc(S.meta.motto)}"
+        aria-label="Motto des Jahres"></div>
+      <div class="ded"><textarea class="w" data-f="meta.dedication" rows="3"
+        aria-label="Widmung">${esc(S.meta.dedication)}</textarea></div>
+      <div class="open"><button class="btn big" id="openBook">Buch aufschlagen ${ARROW_SVG}</button></div>
     </div>
-    <div class="cover-art" style="top:9%;left:50%;transform:translateX(-50%);width:min(58%,300px)">
-      <svg viewBox="-40 -40 80 80" fill="none" stroke="currentColor" stroke-width="1" filter="url(#rough)">
-        ${PART.wreath}
-        <g transform="translate(-30 6) rotate(-30) scale(.9)">${PART.leafB}</g>
-        <g transform="translate(30 6) rotate(30) scale(-.9 .9)">${PART.leafB}</g>
-        <g transform="translate(0 -30) scale(.8)">${PART.flowerB}</g>
-      </svg>
-    </div>
-    <p class="kicker">Ein Buch für dich</p>
-    <div class="yr">2027</div>
-    <p class="for">Für</p>
-    <div class="who"><input class="w plain" data-f="meta.name" value="${esc(S.meta.name)}" aria-label="Name"></div>
-    <div class="motto"><input class="w" data-f="meta.motto" value="${esc(S.meta.motto)}" aria-label="Motto des Jahres" style="text-align:center"></div>
-    <div class="ded"><textarea class="w" data-f="meta.dedication" rows="3" aria-label="Widmung"
-      style="text-align:center">${esc(S.meta.dedication)}</textarea></div>
-    <div class="open"><button class="btn" id="openBook">Buch aufschlagen</button></div>
+    <span class="cover-corner tl">${motif("firSprig", {w:.85})}</span>
+    <span class="cover-corner br">${motif("daisy", {w:.85})}</span>
   </div>`;
 }
 
@@ -381,7 +627,7 @@ function pgToc(){
      </button>`;
   const year = [
     ["Jahresübersicht 2027", "#8A8455", "s:1", "3"],
-    ["Vorsätze &amp; Ziele",  "#AE6A92", "s:3", "6"],
+    ["Vorsätze & Ziele",      "#AE6A92", "s:3", "6"],
     ["Level 10 Life",         "#6B9F9C", "s:4", "8"],
     ["Geburtstage",           "#C4788B", "s:5", "10"]
   ].map(a => row(...a)).join("");
@@ -504,7 +750,7 @@ function wheelSVG(){
     grid += `<line x1="0" y1="0" x2="${gx}" y2="${gy}" stroke="currentColor" stroke-opacity=".28" stroke-width=".7"/>`;
   }
   const avg = (S.level10.reduce((a,b) => a + b.now, 0) / N).toFixed(1);
-  return `<svg class="wheel" viewBox="-176 -170 352 340" filter="url(#rough2)" role="img"
+  return `<svg class="wheel" viewBox="-176 -170 352 340" filter="url(#ink)" role="img"
     aria-label="Level 10 Life Rad, Durchschnitt ${avg} von 10">
     <g color="var(--ink-soft)">${segs}${grid}${labels}</g>
     <circle r="16" fill="var(--paper)" stroke="currentColor" stroke-opacity=".3" stroke-width=".8"/>
@@ -560,19 +806,16 @@ function bdBlock(m){
       <span class="no"><input class="w plain" data-f="bd.${S.birthdays.indexOf(b)}.no"
         value="${esc(b.no)}" placeholder="Notiz"></span>
       <button class="icon-btn rm" data-bdrm="${S.birthdays.indexOf(b)}" aria-label="Löschen">${X_SVG}</button>
-    </div>`).join("") || `<p class="micro" style="padding-left:6px">—</p>`}
+    </div>`).join("") || `<p class="bd-empty">noch keiner</p>`}
   </div>`;
 }
 function pgBdL(){
   return `${head("Geburtstage", "Damit ich es nie vergesse")}
-    <div style="position:absolute;right:5%;top:4%;width:74px;color:#C4788B;opacity:.5;pointer-events:none">
-      <svg viewBox="-30 -30 60 60" fill="none" stroke="currentColor" stroke-width="1.2" filter="url(#rough)">
-        <g transform="translate(0 6)">${PART.candle}</g><g transform="translate(-16 -4) scale(.6)">${PART.flowerB}</g>
-      </svg></div>
-    ${[0,1,2,3,4,5].map(bdBlock).join("")}`;
+    <span class="page-corner" style="color:#C4788B">${motif("candle", {w:.85})}</span>
+    <div class="bd-cols">${[0,1,2,3,4,5].map(bdBlock).join("")}</div>`;
 }
 function pgBdR(){
-  return `${[6,7,8,9,10,11].map(bdBlock).join("")}
+  return `<div class="bd-cols">${[6,7,8,9,10,11].map(bdBlock).join("")}</div>
     <button class="btn ghost sm" id="addBd" style="margin-top:8px">+ Geburtstag hinzufügen</button>
     <p class="micro" style="margin-top:10px">Geburtstage erscheinen automatisch im Kalender und in der Jahresübersicht.</p>`;
 }
@@ -593,34 +836,28 @@ function pgMcover(m){
   const M = MONTHS[m], mk = mkey(m);
   const motto = S.monthMotto[mk] ?? M.motto;
   const v = S.vision.find(x => x.i === `m${m}`);
-  return `<div style="height:100%;display:flex;flex-direction:column;justify-content:center;
-      align-items:center;text-align:center;position:relative;padding:2% 6%">
-    ${monthScene(m, {op:.42})}
-    <p class="label" style="letter-spacing:.4em;padding-left:.4em">${YEAR}</p>
-    <h2 style="font-family:'Kaushan Script',cursive;font-size:clamp(46px,9.5vh,86px);
-      line-height:.95;color:var(--accent);margin:.6vh 0 0">${M.n}</h2>
-    <svg viewBox="0 0 300 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-      preserveAspectRatio="none" filter="url(#rough2)"
-      style="width:min(56%,240px);height:9px;color:var(--accent);opacity:.7;margin-top:4px">
-      <path d="M2 5.5c46-3.4 92-4 138-2.4 44 1.6 88 2 158-.6"/></svg>
-    <div style="margin-top:2.2vh;width:min(90%,34ch)">
-      <input class="w" data-f="mmotto.${mk}" value="${esc(motto)}" aria-label="Monatsmotto"
-        style="text-align:center;font-size:clamp(17px,2.4vh,21px);color:var(--ink-soft)">
-    </div>
-    <div style="margin-top:2.6vh;width:min(64%,220px);position:relative;flex:0 0 auto">
-      <span class="tape tl" style="left:50%;margin-left:-39px"></span>
-      ${v
-        ? `<div class="photo-slot filled"><img src="${v.img}" alt="Foto des Monats">
-             <button class="rm" data-visrm="m${m}" aria-label="Foto entfernen"
-               style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;
-               background:var(--paper);border:1.3px solid var(--rule);display:grid;place-items:center">${X_SVG}</button></div>`
-        : `<button class="photo-slot" data-vis="m${m}">${CAM_SVG}
-             <span class="cap">Foto des Monats</span></button>`}
-    </div>
-    <div style="margin-top:2.4vh;display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
-      <button class="btn" data-go="m:${m}:1">Kalender</button>
-      <button class="btn ghost" data-go="m:${m}:2">Stimmung</button>
-      <button class="btn ghost" data-go="m:${m}:6">Wochen</button>
+  const t = THEME[m];
+  return `<div class="mcover">
+    ${scene(m, {op:.26, size:74, only:2})}
+    <div class="mcover-wreath">${wreath(t.kranz, {r:41, count:15, gap:true})}</div>
+    <div class="mcover-inner">
+      <p class="kicker">${YEAR} · ${t.thema}</p>
+      <h2 class="mname">${M.n}</h2>
+      ${RULE}
+      <input class="w mmotto" data-f="mmotto.${mk}" value="${esc(motto)}" aria-label="Monatsmotto">
+      <div class="mphoto">
+        ${v
+          ? `<div class="photo-slot filled polaroid"><span class="tape mid"></span>
+               <img src="${v.img}" alt="Foto des Monats">
+               <button class="rm" data-visrm="m${m}" aria-label="Foto entfernen">${X_SVG}</button></div>`
+          : `<button class="photo-slot polaroid" data-vis="m${m}"><span class="tape mid"></span>
+               ${CAM_SVG}<span class="cap">Foto des Monats</span></button>`}
+      </div>
+      <div class="mcover-go">
+        <button class="btn" data-go="m:${m}:1">Kalender</button>
+        <button class="btn ghost" data-go="m:${m}:2">Stimmung</button>
+        <button class="btn ghost" data-go="m:${m}:6">Wochen</button>
+      </div>
     </div>
   </div>`;
 }
@@ -690,29 +927,54 @@ function pgMside(m){
     </div>
 
     <div class="sec"><p class="label">Notizen</p>
-      <textarea class="w" data-f="mnote.${mk}" rows="5"
+      <textarea class="w" data-f="mnote.${mk}" rows="4"
         placeholder="Gedanken, Listen, was auch immer …">${esc(S.monthNote[mk] ?? "")}</textarea>
     </div>`;
 }
 
-/* --- Moodtracker -------------------------------------------- */
+/* --- Moodtracker --------------------------------------------
+   Jeder Monat bekommt ein eigenes Motiv UND eine eigene
+   Anordnung. So sieht keine Trackerseite aus wie die davor.
+   ------------------------------------------------------------ */
+
+/** Verschiebt eine Zelle je nach Anordnung — ergibt gezeichnete statt tabellarische Felder. */
+function moodPose(layout, i){
+  const col = i % 6, row = Math.floor(i / 6);
+  switch (layout){
+    case "drift":                                  // treibend wie Schneeflocken
+      return {dx:[0,7,-5,4,-7,3][i % 6], dy:[0,-6,4,-3,6,-4][(i + row) % 6], rot:[-8,5,-3,9,-6,2][i % 6]};
+    case "scatter":                                // gestreute Wiese
+      return {dx:[-6,5,-3,7,-5,2][i % 6], dy:[5,-4,7,-6,3,-5][(i + 2) % 6], rot:[12,-9,4,-14,7,-4][i % 6]};
+    case "hang":                                   // hängend wie Teebeutel
+      return {dx:[0,2,-2,1,-1,3][i % 6], dy:row % 2 ? 9 : 0, rot:[-4,3,-2,5,-3,2][i % 6]};
+    case "tide":                                   // wellenförmig
+      return {dx:0, dy:Math.round(Math.sin(i * 0.9) * 8), rot:Math.round(Math.sin(i * 0.7) * 8)};
+    case "arc":                                    // leichter Bogen je Reihe
+      return {dx:0, dy:Math.round(Math.abs(col - 2.5) * -2.6 + 4), rot:Math.round((col - 2.5) * 3)};
+    default:                                       // ruhige Reihen mit leichtem Versatz
+      return {dx:0, dy:0, rot:[-3,2,-1,3,-2,1][i % 6]};
+  }
+}
+
 function pgMood(m){
-  const n = dim(m), ac = MONTHS[m].ac, motif = MONTHS[m].motif;
+  const n = dim(m), t = THEME[m];
   const cells = Array.from({length: 31}, (_, i) => {
-    const d = i + 1;
-    if (d > n) return `<div class="mood-cell void" aria-hidden="true">
-      ${motifSVG(motif, null, "var(--pencil)")}</div>`;
+    const d = i + 1, p = moodPose(t.layout, i);
+    const pose = `--dx:${p.dx}px;--dy:${p.dy}px;--rot:${p.rot}deg`;
+    if (d > n) return `<span class="mood-cell void" style="${pose}" aria-hidden="true">
+      ${motif(t.mood, {stroke:"var(--pencil)", w:.8})}</span>`;
     const k = key(m, d), v = S.moods[k];
     const c = v != null ? S.moodLabels[v].c : null;
-    return `<button class="mood-cell" data-mood="${k}"
-      aria-label="${d}. ${MONTHS[m].n}${v != null ? ": " + S.moodLabels[v].t : ", keine Stimmung"}">
-      ${motifSVG(motif, c, c ? `color-mix(in oklab,${c},var(--sink-color) 22%)` : "var(--pencil)")}
+    return `<button class="mood-cell${c ? " set" : ""}" data-mood="${k}" style="${pose}"
+      aria-label="${d}. ${MONTHS[m].n}${v != null ? ": " + S.moodLabels[v].t : ", noch nichts eingetragen"}">
+      ${motif(t.mood, {fill:c, fo:.85,
+        stroke:c ? `color-mix(in oklab,${c},var(--sink-color) 30%)` : "var(--pencil)"})}
       <span class="mnum num">${d}</span></button>`;
   }).join("");
-  return `${head("Stimmung", MONTHS[m].n)}
+  return `${head("Stimmung", `${MONTHS[m].n} · ${t.thema}`)}
     ${mtabs(m, 2)}
-    <div class="mood-field">${cells}</div>
-    <p class="micro" style="margin-top:9px">Antippen und Stimmung wählen · nochmal auf dieselbe tippen löscht sie.</p>`;
+    <div class="mood-field ly-${t.layout}">${cells}</div>
+    <p class="hint">Antippen und Stimmung wählen · nochmal dieselbe tippen löscht sie</p>`;
 }
 function pgMoodKey(m){
   const mk = mkey(m), n = dim(m);
@@ -720,7 +982,7 @@ function pgMoodKey(m){
     Object.entries(S.moods).filter(([k,v]) => k.startsWith(mk) && v === i).length);
   const total = counts.reduce((a,b) => a + b, 0);
   return `<div class="pagecol" style="position:relative">
-    ${monthScene(m, {op:.13})}
+    <span class="page-corner">${motif(THEME[m].deco[0][0], {w:.85})}</span>
     <p class="label">Meine fünf Stimmungen</p>
     <p class="micro" style="margin-top:2px">Namen und Farben kannst du ändern.</p>
     <div class="mood-key" style="flex-direction:column;gap:7px;align-items:stretch">
@@ -758,7 +1020,7 @@ function habitBlock(h, m){
   if (h.type === "num"){
     const vals = days.map(d => d <= n ? (S.habitLog[`${h.id}|${key(m,d)}`] ?? 0) : null);
     const peak = Math.max(h.goal * 1.25, ...vals.map(v => v || 0));
-    return `<div class="habit" data-habit="${h.id}" style="--hc:${h.c}">
+    return `<div class="habit" data-habit="${h.id}" style="--hc:${h.c};--gp:${(h.goal / peak * 100).toFixed(1)}%">
       <div class="habit-head">
         <span class="dotc" style="background:${h.c}"></span>
         <span class="hn">${esc(h.ic)} ${esc(h.name)}</span>
@@ -787,10 +1049,11 @@ function habitBlock(h, m){
     </div>
     <div class="ticks">${days.map(d => d > n
       ? `<button class="void" tabindex="-1" aria-hidden="true"></button>`
-      : `<button data-bool="${h.id}|${key(m,d)}" aria-pressed="${!!S.habitLog[`${h.id}|${key(m,d)}`]}"
+      : `<button data-bool="${h.id}|${key(m,d)}" data-d="${d}"
+           class="${d % 5 === 0 || d === 1 ? "mark5" : ""}"
+           aria-pressed="${!!S.habitLog[`${h.id}|${key(m,d)}`]}"
            aria-label="${esc(h.name)} am ${d}.">${CHECK_SVG}</button>`).join("")}</div>
-    <div class="ticks-rule">${days.map(d => `<span class="num">${d <= n ? d : ""}</span>`).join("")}</div>
-    ${best > 1 ? `<p class="streak">🔥 längste Serie: ${best} Tage</p>` : ""}
+    ${best > 1 ? `<p class="streak">längste Serie: ${best} Tage am Stück</p>` : ""}
   </div>`;
 }
 function pgHabitsL(m){
@@ -866,18 +1129,19 @@ function pgMemories(m){
     const id = `mem${m}_${i}`, v = S.vision.find(x => x.i === id);
     return v
       ? `<div class="vslot filled">
-           ${v.img ? `<img src="${v.img}" alt="Erinnerung">` : `<span class="stk">${esc(v.emoji)}</span>`}
+           ${v.img ? `<img src="${v.img}" alt="Erinnerung">` : `<span class="stk">${sticker(v.emoji)}</span>`}
            <span class="cap">${esc(v.cap || "")}</span>
            <button class="rm" data-visrm="${id}" aria-label="Entfernen">${X_SVG}</button></div>`
       : `<button class="vslot" data-vis="${id}">${CAM_SVG}<span class="cap">Foto</span></button>`;
   }).join("");
   return `<div class="pagecol" style="position:relative">
-    ${monthScene(m, {op:.14})}
+    <span class="page-corner">${motif(THEME[m].deco[0][0], {w:.85})}</span>
     <p class="label">Erinnerungen</p>
     <div class="vision" style="grid-template-columns:1fr 1fr;margin-top:8px">${slots}</div>
     <div class="sec"><p class="label">Aufkleber</p>
-      <div class="sticker-bar">${STICKERS.slice(0,12).map(s =>
-        `<button data-stickadd="${mk}">${s}</button>`).join("")}</div>
+      <div class="sticker-bar">${stickersFor(m).slice(0, 10).map(s =>
+        `<button data-stickadd="${mk}|${s.id}" style="--sc:${s.c}"
+          aria-label="${esc(s.n)} aufkleben">${motif(s.id, {w:1.05})}</button>`).join("")}</div>
     </div>
     <div class="box soft" style="margin-top:12px;flex:1;display:flex;flex-direction:column">
       <p class="label" style="margin-bottom:3px">Das nehme ich aus diesem Monat mit</p>
@@ -942,7 +1206,7 @@ function pgDayL(k){
   const [ , mm, ddn ] = k.split("-").map(Number);
   const m = mm - 1, d = ddn, dd = day(k), ev = S.events[k] || [], bd = bdOf(m, d);
   return `<div style="position:relative">
-    ${monthScene(m, {op:.12})}
+    <span class="page-corner">${motif(THEME[m].deco[0][0], {w:.85})}</span>
     <div class="day-head">
       <span class="big num">${d}</span>
       <div style="padding-bottom:6px">
@@ -950,7 +1214,7 @@ function pgDayL(k){
         <p class="label" style="letter-spacing:.1em">${MONTHS[m].n} ${YEAR}</p>
       </div>
     </div>
-    ${STROKE_SVG}
+    ${RULE}
     ${bd.length ? `<p style="margin-top:6px;color:var(--accent);font-size:18px">
       ♥ ${bd.map(b => esc(b.n)).join(", ")} hat heute Geburtstag</p>` : ""}
 
@@ -1021,11 +1285,12 @@ function pgDayR(k){
       </div>
       <div>
         <p class="label" style="margin-bottom:5px">Aufkleber</p>
-        <div class="sticker-bar">${STICKERS.slice(0, 8).map(s =>
-          `<button data-daysticker="${k}|${s}">${s}</button>`).join("")}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;min-height:26px">
-          ${dd.stickers.map((s, i) => `<button data-stickrm="${k}:${i}" title="Entfernen"
-            style="font-size:22px;line-height:1">${esc(s)}</button>`).join("")}
+        <div class="sticker-bar">${stickersFor(m).slice(0, 8).map(s =>
+          `<button data-daysticker="${k}|${s.id}" style="--sc:${s.c}"
+            aria-label="${esc(s.n)} aufkleben">${motif(s.id, {w:1.05})}</button>`).join("")}</div>
+        <div class="stuck">
+          ${dd.stickers.map((s, i) => `<button data-stickrm="${k}:${i}"
+            aria-label="Aufkleber entfernen">${sticker(s)}</button>`).join("")}
         </div>
       </div>
     </div>
@@ -1074,7 +1339,7 @@ function buildSpreads(){
 function pgYearNote(){
   return `<div class="pagecol" style="position:relative">
     <p class="label">Bevor es losgeht</p>
-    ${STROKE_SVG}
+    ${RULE}
     <p style="font-size:19px;color:var(--ink-soft);margin-top:10px;max-width:40ch;line-height:1.5">
       Dieses Buch muss nicht vollständig werden. Kein Tag muss ausgefüllt sein,
       keine Gewohnheit jeden Tag abgehakt. Es ist ein Ort zum Festhalten —
@@ -1096,9 +1361,9 @@ function pgYearNote(){
 function pgMonthEnd(m){
   const mk = mkey(m);
   return `<div class="pagecol" style="position:relative">
-    ${monthScene(m, {op:.16})}
+    <span class="page-corner">${motif(THEME[m].deco[0][0], {w:.85})}</span>
     <p class="label">${MONTHS[m].n} — Rückblick</p>
-    ${STROKE_SVG}
+    ${RULE}
     <div class="box soft" style="margin-top:10px">
       <p class="label" style="margin-bottom:3px">Das lief gut</p>
       <textarea class="w" data-f="mnote5.${mk}.gut" rows="3">${esc(S.monthNote[mk + ".gut"] ?? "")}</textarea>
@@ -1116,15 +1381,16 @@ function pgMonthEnd(m){
 }
 function pgClosing(){
   return `<div class="cover" style="--accent:#4E6B55">
-    ${FRAME_SVG}
-    <div class="cover-art" style="top:16%;left:50%;transform:translateX(-50%);width:min(46%,220px);opacity:.6">
-      <svg viewBox="-40 -40 80 80" fill="none" stroke="currentColor" stroke-width="1" filter="url(#rough)">
-        ${PART.wreath}<g transform="translate(0 8) scale(.9)">${PART.tree}</g>
-      </svg></div>
-    <p class="kicker">Das war</p>
-    <div class="yr" style="font-size:clamp(56px,13vh,120px)">2027</div>
-    <p class="motto" style="margin-top:3vh">Ein ganzes Jahr, aufgeschrieben.<br>Das nächste liegt schon bereit.</p>
-    <div class="open"><button class="btn" data-go="s:0">Von vorne beginnen</button></div>
+    ${FRAME}
+    <div class="cover-wreath">${wreath(["pineBranch","starFive","ornament","sparkle"], {r:41, count:16, gap:true})}</div>
+    <div class="cover-inner">
+      <p class="kicker">Das war</p>
+      <div class="yr">2027</div>
+      <p class="motto plain">Ein ganzes Jahr, aufgeschrieben.<br>Das nächste liegt schon bereit.</p>
+      <div class="open"><button class="btn big" data-go="s:0">Von vorne beginnen</button></div>
+    </div>
+    <span class="cover-corner tl">${motif("pineBranch", {w:.85})}</span>
+    <span class="cover-corner br">${motif("starFive", {w:.85})}</span>
   </div>`;
 }
 
@@ -1186,7 +1452,7 @@ function paintMarks(){
 
   if (!marks.dataset.built){
     marks.innerHTML = MONTHS.map((M, i) =>
-      `<button class="mark" data-go="m:${i}:0" style="--mc:${M.ac}"
+      `<button class="mark" data-go="m:${i}:0" style="--mc:${M.ac};--mfg:${fgOn(M.ac)}"
         role="tab" aria-label="${M.n}"><span>${MS[i]}</span></button>`).join("");
     tabs.innerHTML = [["Inhalt","s:1"],["Jahr","s:2"],["Ziele","s:3"],["Level 10","s:4"],["Geburtstage","s:5"]]
       .map(([n, g]) => `<button class="ytab" data-go="${g}" role="tab"><span>${n}</span></button>`).join("");
@@ -1652,18 +1918,18 @@ document.addEventListener("click", e => {
 
   if ((el = hit("[data-daysticker]"))){
     const [k, s] = el.dataset.daysticker.split("|");
-    day(k).stickers.push(s); save(); return render();
+    day(k).stickers.push(s); save(); render(); return toast("Aufgeklebt");
   }
   if ((el = hit("[data-stickrm]"))){
     const [k, i] = el.dataset.stickrm.split(":");
     day(k).stickers.splice(+i, 1); save(); return render();
   }
   if ((el = hit("[data-stickadd]"))){
-    const mk = el.dataset.stickadd, id = `mem${mk}_${Date.now() % 1000}`;
+    const [mk, sid] = el.dataset.stickadd.split("|");
     const free = [0,1,2,3].map(i => `mem${+mk.slice(5,7) - 1}_${i}`).find(x => !S.vision.some(v => v.i === x));
-    if (!free) return toast("Alle Felder belegt");
-    S.vision.push({i:free, emoji:el.textContent.trim(), cap:""});
-    save(); return render();
+    if (!free) return toast("Alle Felder sind belegt");
+    S.vision.push({i:free, emoji:sid, cap:""});
+    save(); render(); return toast("Aufgeklebt");
   }
 
   if ((el = hit("[data-addev]")))    return eventDialog(key(+el.dataset.addev, 1));
@@ -1721,6 +1987,11 @@ try{
   const th = localStorage.getItem("bujo2027.theme");
   if (th) document.documentElement.setAttribute("data-theme", th);
 }catch(e){}
+
+/* Wird der Tab im Hintergrund gedrosselt, kann eine Blätter-Animation
+   mitten drin einfrieren. Beim Zurückkommen deshalb immer aufräumen. */
+document.addEventListener("visibilitychange", () => { if (!document.hidden) endFlip(); });
+addEventListener("pageshow", endFlip);
 
 let rz;
 addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(render, 180); });

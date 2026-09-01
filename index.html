@@ -15,13 +15,17 @@
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <filter id="rough" x="-12%" y="-12%" width="124%" height="124%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="3" seed="7" result="n"/>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/>
+    <!-- Tinte: ganz leichte Unruhe in der Linie. Die Motive sind bereits
+         unregelmäßig gezeichnet — der Filter setzt nur noch das Korn drauf. -->
+    <filter id="ink" x="-14%" y="-14%" width="128%" height="128%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="11" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.15"
+        xChannelSelector="R" yChannelSelector="G"/>
     </filter>
-    <filter id="rough2" x="-12%" y="-12%" width="124%" height="124%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="19" result="n"/>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.5" xChannelSelector="R" yChannelSelector="G"/>
+    <!-- Papierfaser hinter dem Buchblock -->
+    <filter id="fibre">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
     </filter>
   </defs>
 </svg>
