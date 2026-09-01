@@ -397,7 +397,7 @@ input,textarea,select{font:inherit;color:inherit}
 
 .strip{
   position:absolute;top:0;height:100%;
-  transform-origin:left center;
+  transform-origin:left center;   /* rueckwaerts setzt JS right center */
   /* Damit die beiden Flaechen wirklich im Raum liegen — ohne das hier
      greift backface-visibility am Kind nicht und der Inhalt scheint
      seitenverkehrt durch. */
@@ -431,6 +431,9 @@ input,textarea,select{font:inherit;color:inherit}
     var(--paper-edge) 50%,
     color-mix(in oklab,var(--paper),#fff 30%));
 }
+
+/* Rueckwaerts liegt die Aussenkante links */
+#flip .strip[style*="right:0"].edge::after{right:auto;left:0}
 /* Wanderschatten auf der Seite UNTER dem Blatt */
 #flip .under-shade{
   position:absolute;top:0;bottom:0;width:50%;pointer-events:none;
