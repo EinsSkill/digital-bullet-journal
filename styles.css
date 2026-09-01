@@ -111,36 +111,151 @@ input,textarea,select{font:inherit;color:inherit}
 }
 
 /* ============================================================
-   BOOK
+   BUCHKÖRPER
+   Das Buch ist immer in Doppelseiten-Größe im Layout. Jede Seite
+   hat A4-Verhältnis (1:1.414) — aufgeschlagen also 1.414:1 quer.
+   Geschlossen wird nicht die Größe geändert (Layout-Thrash),
+   sondern die Bühne nach links geschoben, sodass genau die
+   rechte Hälfte mittig steht.
    ============================================================ */
 #book{
   position:relative;
-  width:var(--book-w);
-  height:min(94vh, calc(var(--book-w) * .70));
-  perspective:2400px;
-  perspective-origin:50% 46%;
+  /* Höhe führt, Breite folgt — so bleibt jede Seite exakt A4 hoch */
+  --bh:min(93vh, calc(97vw / 1.414), 980px);
+  height:var(--bh);
+  width:calc(var(--bh) * 1.414);
+  perspective:2200px;
+  perspective-origin:50% 44%;
 }
+#stage{
+  position:absolute;inset:0;
+  transform-style:preserve-3d;
+  transition:transform .82s cubic-bezier(.22,.74,.16,1);
+}
+/* Geschlossen: rechte Hälfte in die Mitte holen */
+#book.cover-mode #stage{transform:translateX(-25%)}
+
+/* Weicher Schatten unter dem ganzen Buch */
+#shadow{
+  position:absolute;left:2%;right:2%;bottom:-2.4%;height:7%;transform:translateZ(-4px);
+  border-radius:50%;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse at 50% 50%, var(--shadow-strong), transparent 72%);
+  filter:blur(1px);opacity:.7;
+  transition:opacity .82s ease, transform .82s cubic-bezier(.22,.74,.16,1);
+}
+#book.cover-mode #shadow{transform:scaleX(.52) translateX(48%);opacity:.85}
+
+/* ============================================================
+   BUCHDECKEL
+   Zwei Deckelhälften mit leichtem Überstand plus Buchrücken.
+   Sie liegen HINTER dem Seitenblock und ragen an den Rändern
+   ein paar Pixel heraus.
+   ============================================================ */
+/* In einer preserve-3d-Ebene entscheidet die Z-Lage, nicht die DOM-Reihenfolge:
+   die Deckel muessen physisch hinter dem Seitenblock liegen. */
+#boards{position:absolute;inset:0;pointer-events:none;transform:translateZ(-3px)}
+.board{
+  position:absolute;top:-7px;bottom:-7px;width:calc(50% + 8px);
+  background:linear-gradient(160deg,
+    color-mix(in oklab,var(--cloth),#fff 12%),
+    var(--cloth) 42%,
+    var(--cloth-deep));
+  box-shadow:0 1px 0 rgba(255,255,255,.14) inset;
+}
+.board.l{left:-8px;border-radius:7px 2px 2px 7px}
+.board.r{right:-8px;border-radius:2px 7px 7px 2px}
+/* Buchrücken: die gerundete Falz zwischen den Deckeln */
+.spine{
+  position:absolute;top:-7px;bottom:-7px;left:50%;width:26px;translate:-50% 0;
+  background:linear-gradient(to right,
+    var(--cloth-deep), color-mix(in oklab,var(--cloth),#fff 8%) 34%,
+    color-mix(in oklab,var(--cloth),#fff 8%) 66%, var(--cloth-deep));
+  opacity:0;transition:opacity .5s ease .2s;
+}
+/* Geschlossen sitzt der Rücken an der linken Kante des Deckels —
+   das ist die Buchmitte (50 %), nicht ein Viertel. */
+#book.cover-mode .spine{
+  left:50%;width:21px;translate:-100% 0;opacity:1;
+  border-radius:7px 0 0 7px;
+  box-shadow:-3px 0 9px -4px var(--shadow-strong);
+  transition:opacity .3s ease;
+}
+#book.cover-mode .board.l{opacity:0}
+
+/* Seitenstapel — geschlossen an der rechten Deckelkante sichtbar */
+#book.cover-mode .board.r::after{
+  content:"";position:absolute;right:-7px;top:9px;bottom:9px;width:9px;
+  border-radius:0 4px 4px 0;
+  background:repeating-linear-gradient(to bottom,
+    var(--paper-edge) 0 2px,
+    color-mix(in oklab,var(--paper-edge),var(--sink-color) 16%) 2px 3px);
+  box-shadow:2px 0 5px -2px var(--shadow);
+}
+
+/* ============================================================
+   BUNDSTEG
+   Eine eigene Ebene über den Seiten: beidseitiger Schattenverlauf
+   plus schmale Falzlinie. Ersetzt die alten Seitenschatten.
+   ============================================================ */
+#gutter{
+  position:absolute;top:0;bottom:0;left:50%;width:15%;translate:-50% 0;
+  pointer-events:none;z-index:7;
+  background:
+    linear-gradient(to right, transparent, color-mix(in oklab,var(--shadow),transparent 30%) 42%,
+      color-mix(in oklab,var(--shadow-strong),transparent 40%) 49.4%,
+      color-mix(in oklab,var(--shadow-strong),transparent 40%) 50.6%,
+      color-mix(in oklab,var(--shadow),transparent 30%) 58%, transparent);
+  opacity:0;transition:opacity .4s ease .34s;
+}
+#book:not(.cover-mode) #gutter{opacity:1}
+/* Falzlinie */
+#gutter::after{
+  content:"";position:absolute;top:2%;bottom:2%;left:50%;width:1px;translate:-50% 0;
+  background:linear-gradient(to bottom, transparent, var(--shadow-strong) 12%,
+    var(--shadow-strong) 88%, transparent);
+  opacity:.5;
+}
+
+/* ============================================================
+   SEITENSTAPEL an den Außenkanten
+   Die Dicke wechselt mit dem Fortschritt im Buch: vorne liegt
+   links wenig, rechts viel. --stack-l / --stack-r kommen aus render().
+   ============================================================ */
 #spread{
   position:absolute;inset:0;
   display:grid;grid-template-columns:1fr 1fr;
-  transform-style:preserve-3d;
-  border-radius:5px 9px 9px 5px;
+  transform-style:preserve-3d;transform:translateZ(0);
+  border-radius:4px 8px 8px 4px;
   box-shadow:
-    0 1px 0 rgba(255,255,255,.28) inset,
-    0 18px 40px -18px var(--shadow-strong),
-    0 42px 80px -40px var(--shadow-strong);
+    0 1px 0 rgba(255,255,255,.26) inset,
+    0 16px 34px -16px var(--shadow-strong);
 }
-/* stacked page edges */
+/* Feste Breite, skaliert per transform — Breite zu animieren wäre
+   Layout-Arbeit in jedem Frame. --stack-l/-r sind Faktoren 0…1. */
 #spread::before,#spread::after{
-  content:"";position:absolute;top:6px;bottom:6px;width:11px;pointer-events:none;z-index:6;
+  content:"";position:absolute;top:5px;bottom:5px;width:15px;pointer-events:none;z-index:6;
+  transition:transform .5s cubic-bezier(.22,1,.36,1), opacity .5s ease;
 }
-#spread::before{left:-9px;border-radius:6px 0 0 6px;
-  background:repeating-linear-gradient(to right, var(--paper-edge) 0 1px, color-mix(in oklab,var(--paper-edge),var(--sink-color) 12%) 1px 2px);
-  box-shadow:-2px 0 6px -2px var(--shadow);}
-#spread::after{right:-9px;border-radius:0 6px 6px 0;
-  background:repeating-linear-gradient(to left, var(--paper-edge) 0 1px, color-mix(in oklab,var(--paper-edge),var(--sink-color) 12%) 1px 2px);
-  box-shadow:2px 0 6px -2px var(--shadow);}
+#spread::before{
+  left:-15px;border-radius:5px 0 0 5px;transform-origin:right center;
+  transform:scaleX(var(--stack-l,.45));
+  background:repeating-linear-gradient(to right, var(--paper-edge) 0 1px,
+    color-mix(in oklab,var(--paper-edge),var(--sink-color) 14%) 1px 2px);
+  box-shadow:-2px 0 6px -3px var(--shadow);
+}
+#spread::after{
+  right:-15px;border-radius:0 5px 5px 0;transform-origin:left center;
+  transform:scaleX(var(--stack-r,.45));
+  background:repeating-linear-gradient(to left, var(--paper-edge) 0 1px,
+    color-mix(in oklab,var(--paper-edge),var(--sink-color) 14%) 1px 2px);
+  box-shadow:2px 0 6px -3px var(--shadow);
+}
+#book.cover-mode #spread::before{opacity:0}
 
+
+/* ============================================================
+   DIE SEITE SELBST
+   ============================================================ */
 .page{
   position:relative;overflow:hidden;
   background:var(--paper);
@@ -150,13 +265,8 @@ input,textarea,select{font:inherit;color:inherit}
   --accent:var(--pencil);
   --tint:var(--paper);
 }
-.page.left{border-radius:5px 0 0 5px}
-.page.right{border-radius:0 5px 5px 0}
-/* gutter shading */
-.page.left::after{content:"";position:absolute;top:0;right:0;bottom:0;width:15%;pointer-events:none;z-index:4;
-  background:linear-gradient(to right,transparent,var(--shadow));}
-.page.right::after{content:"";position:absolute;top:0;left:0;bottom:0;width:15%;pointer-events:none;z-index:4;
-  background:linear-gradient(to left,transparent,var(--shadow));}
+.page.left{border-radius:4px 0 0 4px}
+.page.right{border-radius:0 4px 4px 0}
 .page-inner{
   position:relative;z-index:2;flex:1;min-height:0;
   padding:var(--page-pad) clamp(20px,3.4%,42px);
@@ -175,36 +285,108 @@ input,textarea,select{font:inherit;color:inherit}
 .page.left .folio{left:26px}
 .page.right .folio{right:26px}
 
-/* flip layer */
-#flip{position:absolute;inset:0;pointer-events:none;z-index:40;transform-style:preserve-3d;display:none}
+/* Die alten Seitenschatten weichen dem Bundsteg, eine leichte
+   Wölbung zur Mitte hin bleibt. */
+.page.left::after,.page.right::after{
+  content:"";position:absolute;top:0;bottom:0;width:9%;pointer-events:none;z-index:4;
+}
+.page.left::after{right:0;background:linear-gradient(to right,transparent,
+  color-mix(in oklab,var(--shadow),transparent 55%))}
+.page.right::after{left:0;background:linear-gradient(to left,transparent,
+  color-mix(in oklab,var(--shadow),transparent 55%))}
+
+/* ============================================================
+   DECKBLATT
+   Kein Vollbild mehr: der Deckel ist die rechte Hälfte im
+   A4-Hochformat. Die linke Hälfte steht links außerhalb.
+   ============================================================ */
+#book.cover-mode #spread{grid-template-columns:1fr 1fr}
+#book.cover-mode .page.left{visibility:hidden}
+#book.cover-mode .page.right{
+  border-radius:2px 6px 6px 2px;
+  box-shadow:0 2px 3px -1px var(--shadow), 0 22px 44px -20px var(--shadow-strong);
+}
+#book.cover-mode .page.right::after{display:none}
+#book.cover-mode #marks,
+#book.cover-mode #ytabs{opacity:0;pointer-events:none}
+#marks,#ytabs{transition:opacity .45s ease}
+
+/* Der wegklappende Deckel beim Aufschlagen */
+.cover-leaf{
+  position:absolute;top:0;height:100%;width:50%;left:50%;
+  transform-origin:left center;
+  backface-visibility:hidden;
+  border-radius:2px 6px 6px 2px;
+  overflow:hidden;
+  box-shadow:0 2px 4px -1px var(--shadow), 0 20px 40px -18px var(--shadow-strong);
+  background:var(--paper);
+  background-image:var(--dots),var(--noise);
+  background-size:22px 22px,180px 180px;
+}
+.cover-leaf .leaf-face{position:absolute;inset:0;backface-visibility:hidden}
+.cover-leaf .leaf-shade{position:absolute;inset:0;pointer-events:none;background:#000;opacity:0}
+
+/* ============================================================
+   UMBLÄTTERN — gebogenes Blatt aus Streifen
+   Alle Streifen sind GESCHWISTER in einer einzigen 3D-Ebene.
+   Ihre Position auf dem Bogen rechnet JS aus; dadurch gibt es
+   keine verschachtelten preserve-3d-Ketten, die Safari schwer
+   fallen. Jeder Streifen zeigt seinen Ausschnitt der Seite;
+   dreht er über 90°, verdeckt backface-visibility die Vorderseite
+   und man sieht die Papierrückseite des Streifens.
+   ============================================================ */
+#flip{
+  position:absolute;inset:0;pointer-events:none;z-index:40;
+  transform-style:preserve-3d;display:none;
+}
 #flip.on{display:block}
-.flip-sheet{
-  position:absolute;top:0;height:100%;width:50%;
-  transform-style:preserve-3d;backface-visibility:hidden;
+
+.strip{
+  position:absolute;top:0;height:100%;
+  transform-origin:left center;
+  /* Rückseite des Blattes: leeres Papier */
   background:var(--paper);
   background-image:var(--dots),var(--noise);
   background-size:22px 22px,180px 180px;
   overflow:hidden;
-  box-shadow:0 0 34px -6px var(--shadow-strong);
 }
-.flip-sheet .flip-face{
-  position:absolute;inset:0;
-  padding:var(--page-pad) clamp(20px,3.4%,42px);
+/* Vorderseite: der Seitenausschnitt, verschwindet nach 90° */
+.strip .face{
+  position:absolute;top:0;height:100%;
+  backface-visibility:hidden;
   overflow:hidden;
+  background:var(--paper);
+  background-image:var(--dots),var(--noise);
+  background-size:22px 22px,180px 180px;
 }
-.flip-sheet.to-left .flip-face{padding-left:clamp(26px,4.6%,54px)}
-.flip-sheet.to-right .flip-face{padding-right:clamp(26px,4.6%,54px)}
-.flip-sheet .shade{position:absolute;inset:0;pointer-events:none;z-index:2}
-/* Papierkante: die schmale helle Flaeche, die man sieht, wenn das Blatt steht */
-.flip-sheet .edge{
-  position:absolute;top:0;bottom:0;width:3px;pointer-events:none;z-index:3;opacity:0;
+.strip .face > .fc{
+  position:absolute;top:0;height:100%;
+  padding:var(--page-pad) clamp(20px,3.4%,42px);
+}
+/* Schattierung pro Streifen — JS setzt nur die Deckkraft */
+.strip .sh{
+  position:absolute;inset:0;pointer-events:none;background:#000;opacity:0;
+}
+/* Die helle Papierkante am äußeren Rand des aufgestellten Blattes */
+.strip.edge::after{
+  content:"";position:absolute;top:0;bottom:0;right:0;width:2px;
   background:linear-gradient(to bottom,
-    color-mix(in oklab,var(--paper),#fff 40%),
-    var(--paper-edge) 45%,
-    color-mix(in oklab,var(--paper),#fff 25%));
+    color-mix(in oklab,var(--paper),#fff 45%),
+    var(--paper-edge) 50%,
+    color-mix(in oklab,var(--paper),#fff 30%));
 }
-.flip-sheet.to-left .edge{right:0}
-.flip-sheet.to-right .edge{left:0}
+/* Wanderschatten auf der Seite UNTER dem Blatt */
+#flip .under-shade{
+  position:absolute;top:0;bottom:0;width:50%;pointer-events:none;
+  background:linear-gradient(to right, rgba(0,0,0,.3), transparent 62%);
+  opacity:0;
+}
+
+@media (prefers-reduced-motion:reduce){
+  #stage{transition:none}
+  #shadow{transition:none}
+}
+
 
 /* ============================================================
    BOOKMARKS (right edge registers)
@@ -396,16 +578,7 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 .turn.prev i::after{transform:translateX(2px) rotate(135deg)}
 @media (hover:none){.turn{display:none}}
 
-/* ============================================================
-   DECKBLATT-MODUS — beim Start liegt nur der Buchdeckel oben
-   ============================================================ */
-#book.cover-mode #spread{grid-template-columns:1fr}
-#book.cover-mode .page.left{display:none}
-#book.cover-mode .page.right{border-radius:5px 9px 9px 5px}
-#book.cover-mode .page.right::after{display:none}
-#book.cover-mode #marks,
-#book.cover-mode #ytabs{opacity:0;pointer-events:none}
-#marks,#ytabs{transition:opacity .45s ease}
+/* Der Deckblatt-Modus steht oben im Abschnitt BUCHKÖRPER. */
 
 /* ============================================================
    ILLUSTRATIONEN
@@ -1090,7 +1263,37 @@ textarea.w{resize:none;line-height:1.5;border-bottom:none}
 @media (max-width:860px), (orientation:portrait) and (max-width:1100px){
   body{font-size:18px;overflow:auto}
   #desk{position:static;min-height:100%;padding:0;display:block}
-  #book{width:100%;height:auto;perspective:none}
+  #book{width:100%;height:auto;perspective:1400px}
+  /* Auf dem Handy wird nicht verschoben: eine Seite fuellt den Schirm.
+     Das Deckblatt behaelt sein A4-Format, nur kleiner. */
+  #stage{position:static;transform:none!important;transform-style:flat}
+  #boards,#gutter,#shadow{display:none}
+  #book.cover-mode #spread{min-height:0}
+  #book.cover-mode .page.right{
+    width:min(86vw,420px);margin:5vh auto;aspect-ratio:1/1.414;min-height:0;
+    border-radius:3px 8px 8px 3px;
+    box-shadow:0 2px 4px -1px var(--shadow), 0 18px 34px -16px var(--shadow-strong),
+      -7px 0 0 -1px var(--cloth), -9px 0 0 -2px var(--cloth-deep);
+  }
+  #book.cover-mode .page.right .page-inner{padding:0!important;overflow:hidden}
+  /* Der Deckel ist hier viel schmaler — die Typo haengt an der Breite,
+     nicht an der Schirmhoehe, sonst laeuft "2027" ueber den Rand. */
+  #book.cover-mode .cover{padding:7% 6%}
+  #book.cover-mode .cover .yr{font-size:clamp(54px,20vw,104px)}
+  #book.cover-mode .cover .kicker{font-size:9px;letter-spacing:.3em}
+  #book.cover-mode .cover-inner{width:88%}
+  #book.cover-mode .cover .who .w{font-size:clamp(21px,6.6vw,32px)}
+  #book.cover-mode .cover .for{font-size:9.5px;margin-top:1.4vh}
+  #book.cover-mode .cover .motto{margin-top:1.6vh}
+  #book.cover-mode .cover .motto .w{font-size:clamp(14px,4vw,17px)}
+  #book.cover-mode .cover .ded{margin-top:1vh}
+  #book.cover-mode .cover .ded .w{font-size:clamp(12px,3.4vw,15px)}
+  #book.cover-mode .cover .open{margin-top:2.2vh}
+  #book.cover-mode .cover .open .btn{font-size:14px;padding:8px 18px}
+  #book.cover-mode .cover-wreath{width:96%}
+  #book.cover-mode .cover-corner{width:22%}
+  .cover-leaf{width:min(86vw,420px);left:50%;translate:-50% 0;top:5vh;
+    height:calc(min(86vw,420px) * 1.414)}
   #spread{position:relative;grid-template-columns:1fr;box-shadow:none;border-radius:0;min-height:100vh}
   #spread::before,#spread::after{display:none}
   .page{border-radius:0!important;min-height:calc(100vh - 96px)}
