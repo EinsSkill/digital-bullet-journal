@@ -1587,6 +1587,20 @@ function stripCount(){
   return kerne <= 4 ? 8 : 10;
 }
 
+/* Die Seite, auf der das Blatt landet, darf erst wechseln, wenn das
+   Blatt liegt — sonst steht der neue Inhalt schon da, während das alte
+   Blatt noch darüber klappt. Bis dahin wartet er hier. */
+let pendingLand = null;
+
+/** Den zurückgehaltenen Inhalt der Landeseite endlich einsetzen. */
+function applyLand(){
+  if (!pendingLand) return;
+  const {el, html} = pendingLand;
+  pendingLand = null;
+  const inner = el.querySelector(".page-inner");
+  if (inner) inner.innerHTML = html;
+}
+
 /** Blätter-Ebene restlos aufräumen. Mehrfach aufrufbar. */
 function endFlip(){
   const flip = $("#flip");
@@ -1598,6 +1612,8 @@ function endFlip(){
   flip.style.willChange = "";
   flip.innerHTML = "";
   flipEls = null;
+  // Das Blatt ist weg — jetzt darf die Landeseite umschalten.
+  applyLand();
 }
 
 /** Krümmung über den Verlauf: schwach – stark – schwach. */
@@ -1723,12 +1739,18 @@ function animateTurn(mutate, back){
   // Vorderseite ist die Seite, die jetzt oben liegt …
   const vorne = (back ? $(".page.left") : $(".page.right"))
                   .querySelector(".page-inner").innerHTML;
+  // … und dort landet das Blatt gleich: vorwärts links, rückwärts rechts.
+  const landeEl = back ? $(".page.right") : $(".page.left");
+  const landeAlt = landeEl.querySelector(".page-inner").innerHTML;
+
   mutate();
   render();
-  // … und die Rückseite die, die nach dem Blättern an ihrer Stelle steht:
-  // vorwärts wird aus der rechten Seite die neue linke.
-  const hinten = (back ? $(".page.right") : $(".page.left"))
-                  .querySelector(".page-inner").innerHTML;
+
+  // Die Rückseite trägt schon den neuen Inhalt der Landeseite …
+  const hinten = landeEl.querySelector(".page-inner").innerHTML;
+  // … die Seite darunter zeigt aber weiter die alte, bis das Blatt liegt.
+  landeEl.querySelector(".page-inner").innerHTML = landeAlt;
+  pendingLand = {el:landeEl, html:hinten};
 
   const bau = buildStrips(vorne, hinten, back);
   flipEls = bau;
