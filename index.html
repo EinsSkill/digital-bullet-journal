@@ -35,11 +35,25 @@
     <button class="turn prev" id="tPrev" aria-label="Zurückblättern"><i></i></button>
     <button class="turn next" id="tNext" aria-label="Weiterblättern"><i></i></button>
     <div id="ytabs" role="tablist" aria-label="Jahresbereich"></div>
-    <div id="spread">
-      <div class="page left"><div class="page-inner" id="pgL"></div><div class="folio"></div></div>
-      <div class="page right"><div class="page-inner" id="pgR"></div><div class="folio"></div></div>
+
+    <!-- Die Bühne trägt die ganze Buchbewegung. Geschlossen ist sie nach
+         links geschoben, sodass nur die rechte Hälfte — der Buchdeckel im
+         A4-Hochformat — in der Mitte steht. Beim Aufschlagen fährt sie auf
+         Null zurück und das Buch wächst auf die Doppelseite. -->
+    <div id="stage">
+      <div id="shadow" aria-hidden="true"></div>
+      <div id="boards" aria-hidden="true">
+        <span class="board l"></span><span class="board r"></span>
+        <span class="spine"></span>
+      </div>
+      <div id="spread">
+        <div class="page left"><div class="page-inner" id="pgL"></div><div class="folio"></div></div>
+        <div class="page right"><div class="page-inner" id="pgR"></div><div class="folio"></div></div>
+      </div>
+      <div id="gutter" aria-hidden="true"></div>
+      <div id="flip" aria-hidden="true"></div>
     </div>
-    <div id="flip" aria-hidden="true"></div>
+
     <div id="marks" role="tablist" aria-label="Monats-Lesezeichen"></div>
   </div>
 </div>

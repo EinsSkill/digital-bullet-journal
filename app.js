@@ -1508,6 +1508,12 @@ function render(){
   const book = $("#book"), L = $(".page.left"), R = $(".page.right");
   book.classList.toggle("cover-mode", !!sp.solo);
 
+  // Seitenstapel: vorne im Buch liegt links wenig und rechts viel,
+  // hinten umgekehrt. 0…1, das CSS skaliert die Kante danach.
+  const fort = SPREADS.length > 1 ? cur / (SPREADS.length - 1) : 0;
+  book.style.setProperty("--stack-l", (0.08 + fort * 0.86).toFixed(3));
+  book.style.setProperty("--stack-r", (0.94 - fort * 0.86).toFixed(3));
+
   [L, R].forEach(p => { p.style.setProperty("--accent", lift(sp.ac)); });
   $("#pgL").innerHTML = sp.L ? sp.L() : "";
   $("#pgR").innerHTML = sp.R ? sp.R() : "";
@@ -1563,22 +1569,241 @@ function restoreScroll(){
   $("#pgR").scrollTop = v ? v[1] : 0;
 }
 
-/* --- Blättern mit 3D-Effekt ---------------------------------- */
-let flipTimer = 0;
+/* --- Blättern: gebogenes Blatt ------------------------------
+   Das Blatt wird in Streifen zerlegt. Jeder Streifen ist ein
+   GESCHWISTER-Element in einer einzigen 3D-Ebene; seine Lage auf
+   dem Bogen rechnen wir selbst aus. Verschachtelte preserve-3d-
+   Ketten (die Safari schwer fallen) entstehen so gar nicht erst.
+   ------------------------------------------------------------ */
+
+let flipTimer = 0, flipRAF = 0, flipEls = null;
 const reduced = () => window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+
+/** Wie viele Streifen sich lohnen — auf schwachen Geräten weniger. */
+function stripCount(){
+  if (reduced()) return 1;
+  const kerne = navigator.hardwareConcurrency || 4;
+  if (isPhone()) return kerne <= 4 ? 6 : 8;
+  return kerne <= 4 ? 8 : 10;
+}
 
 /** Blätter-Ebene restlos aufräumen. Mehrfach aufrufbar. */
 function endFlip(){
   const flip = $("#flip");
   clearTimeout(flipTimer);
+  cancelAnimationFrame(flipRAF);
   flip.querySelectorAll("*").forEach(el => el.getAnimations?.().forEach(a => a.cancel()));
+  flip.getAnimations?.().forEach(a => a.cancel());
   flip.classList.remove("on");
+  flip.style.willChange = "";
   flip.innerHTML = "";
+  flipEls = null;
+}
+
+/** Krümmung über den Verlauf: schwach – stark – schwach. */
+const curveAt = t => Math.sin(Math.PI * Math.min(1, Math.max(0, t)));
+
+/**
+ * Legt die Streifen entlang eines Bogens ab.
+ * Der Bogen beginnt am Bundsteg und rollt sich mit t auf.
+ *   grad  – Grunddrehung des Blattes (0 … 180)
+ *   bend  – zusätzlicher Winkel, der sich über die Blattbreite verteilt
+ */
+function poseStrips(els, w, grad, bend, dir){
+  let x = 0, z = 0;
+  for (let i = 0; i < els.length; i++){
+    const s = els[i];
+    // Anteil dieses Streifens am Gesamtwinkel
+    const a = dir * (grad + bend * (i / Math.max(1, els.length - 1)));
+    const rad = a * Math.PI / 180;
+    s.el.style.transform =
+      `translate3d(${x.toFixed(2)}px,0,${z.toFixed(2)}px) rotateY(${a.toFixed(2)}deg)`;
+    // Licht: je steiler der Streifen steht, desto dunkler
+    const dunkel = Math.min(.46, Math.abs(Math.sin(rad)) * .42);
+    s.sh.style.opacity = dunkel.toFixed(3);
+    // Ende dieses Streifens ist der Anfang des nächsten.
+    // Bei rotateY(θ) zeigt die lokale X-Achse auf (cos θ, 0, −sin θ) —
+    // deshalb hebt sich das Blatt zum Betrachter statt hinter die Seite.
+    x += w * Math.cos(rad);
+    z -= w * Math.sin(rad);
+  }
+}
+
+/** Klont die aufliegende Seite als Streifensatz in die Blätter-Ebene. */
+function buildStrips(src, back){
+  const flip = $("#flip");
+  const N = stripCount();
+  const box = $("#spread").getBoundingClientRect();
+  const halb = box.width / 2;
+  const w = halb / N;
+  const inner = src.querySelector(".page-inner").innerHTML;
+
+  // Beim Vorwärtsblättern liegt die Achse am Bundsteg (Mitte),
+  // beim Zurückblättern ebenso — nur die Drehrichtung kehrt sich um.
+  const wrap = document.createElement("div");
+  wrap.style.cssText = `position:absolute;top:0;height:100%;left:50%;width:${halb}px;
+    transform-style:preserve-3d;${back ? "transform:scaleX(-1);transform-origin:left center;" : ""}`;
+
+  const els = [];
+  for (let i = 0; i < N; i++){
+    const s = document.createElement("div");
+    s.className = "strip" + (i === N - 1 ? " edge" : "");
+    // 0.6px Überlappung, damit zwischen den Streifen keine Fuge aufblitzt
+    s.style.cssText = `width:${(w + .6).toFixed(2)}px;left:0;`;
+    const face = document.createElement("div");
+    face.className = "face";
+    face.style.cssText = `width:${(w + .6).toFixed(2)}px;left:0;`;
+    const fc = document.createElement("div");
+    fc.className = "fc";
+    fc.style.cssText = `width:${halb}px;left:${(-i * w).toFixed(2)}px;` +
+      (back ? "transform:scaleX(-1);transform-origin:center;" : "");
+    fc.innerHTML = inner;
+    face.appendChild(fc);
+    const sh = document.createElement("div");
+    sh.className = "sh";
+    s.append(face, sh);
+    wrap.appendChild(s);
+    els.push({el:s, sh});
+  }
+
+  // Wanderschatten auf der Seite darunter
+  const under = document.createElement("div");
+  under.className = "under-shade";
+  under.style.cssText += back ? "right:50%;transform:scaleX(-1);" : "left:50%;";
+
+  flip.append(under, wrap);
+  flip.classList.add("on");
+  flip.style.willChange = "transform";
+  // Nichts im Klon darf Fokus oder Klicks bekommen
+  flip.querySelectorAll("input,textarea,button,select,a")
+      .forEach(el => { el.setAttribute("tabindex","-1"); el.setAttribute("aria-hidden","true"); });
+  return {els, under, w, N};
+}
+
+/** Klappt die aufliegende Seite um den Bundsteg weg. */
+function animateTurn(mutate, back){
+  endFlip();
+  if (reduced()){ mutate(); render(); return; }
+
+  const src = back ? $(".page.left") : $(".page.right");
+  const bau = buildStrips(src, back);
+  flipEls = bau;
+
+  mutate();
+  render();
+
+  const D = 620;
+  const start = performance.now();
+  let frames = 0;
+  const dir = -1;                      // Blatt dreht immer vom Betrachter weg
+
+  const schritt = (now) => {
+    const t = Math.min(1, (now - start) / D);
+    // weiches Ein- und Ausschwingen
+    const e = t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+    const grad = e * 172;
+    const bend = curveAt(t) * 26;      // Biegung, am stärksten in der Mitte
+    poseStrips(bau.els, bau.w, grad, bend, dir);
+    bau.under.style.opacity = (curveAt(t) * .8).toFixed(3);
+    frames++;
+    if (t < 1) flipRAF = requestAnimationFrame(schritt);
+    else {
+      lastFlipFPS = Math.round(frames / ((now - start) / 1000));
+      // Diagnosewert, damit die Bildrate von aussen ablesbar ist
+      try{ window.__flipFPS = lastFlipFPS; }catch(e){}
+      endFlip();
+    }
+  };
+  flipRAF = requestAnimationFrame(schritt);
+  flipTimer = setTimeout(endFlip, D + 260);   // Sicherheitsnetz
+}
+
+/** Zuletzt gemessene Bildrate beim Blättern (für Diagnose). */
+let lastFlipFPS = 0;
+
+/* --- Buch auf- und zuklappen -------------------------------- */
+
+/** Der Deckel ist steif: er biegt sich nicht, er schwingt auf. */
+function openBook(){
+  const book = $("#book");
+  if (!book.classList.contains("cover-mode")) return goto(1);
+  if (reduced()){ book.classList.remove("cover-mode"); goto(1); return; }
+
+  endFlip();
+  const flip = $("#flip");
+  const deckel = document.createElement("div");
+  deckel.className = "cover-leaf";
+  deckel.innerHTML = `<div class="leaf-face">${$(".page.right").innerHTML}</div>
+    <div class="leaf-shade"></div>`;
+  deckel.querySelectorAll("input,textarea,button,select,a")
+        .forEach(el => { el.setAttribute("tabindex","-1"); el.setAttribute("aria-hidden","true"); });
+  flip.appendChild(deckel);
+  flip.classList.add("on");
+
+  // Erst die Doppelseite dahinter aufbauen, dann den Deckel wegklappen
+  book.classList.remove("cover-mode");
+  memoScroll();
+  cur = 1; dayView = null; side = 0;
+  render();
+
+  const D = 820;
+  deckel.animate([
+      {transform:"rotateY(0deg)"},
+      {transform:"rotateY(-104deg)", offset:.55},
+      {transform:"rotateY(-176deg)"}
+    ], {duration:D, easing:"cubic-bezier(.3,.02,.16,1)", fill:"forwards"});
+  deckel.querySelector(".leaf-shade").animate(
+      [{opacity:0}, {opacity:.34, offset:.5}, {opacity:.14}],
+      {duration:D, easing:"ease-in-out", fill:"forwards"});
+  flipTimer = setTimeout(endFlip, D + 60);
+}
+
+/** Zurück zum Deckblatt — die Umkehrung. */
+function closeBook(){
+  const book = $("#book");
+  if (book.classList.contains("cover-mode")) return;
+  if (reduced()){ book.classList.add("cover-mode"); cur = 0; render(); return; }
+
+  endFlip();
+  memoScroll();
+  cur = 0; dayView = null; side = 0;
+  render();                                  // rendert das Deckblatt rechts
+  book.classList.add("cover-mode");
+
+  const flip = $("#flip");
+  const deckel = document.createElement("div");
+  deckel.className = "cover-leaf";
+  deckel.innerHTML = `<div class="leaf-face">${$(".page.right").innerHTML}</div>
+    <div class="leaf-shade"></div>`;
+  deckel.querySelectorAll("input,textarea,button,select,a")
+        .forEach(el => { el.setAttribute("tabindex","-1"); el.setAttribute("aria-hidden","true"); });
+  flip.appendChild(deckel);
+  flip.classList.add("on");
+
+  const D = 780;
+  deckel.animate([
+      {transform:"rotateY(-176deg)"},
+      {transform:"rotateY(-72deg)", offset:.5},
+      {transform:"rotateY(0deg)"}
+    ], {duration:D, easing:"cubic-bezier(.3,.02,.16,1)", fill:"forwards"});
+  deckel.querySelector(".leaf-shade").animate(
+      [{opacity:.2}, {opacity:.3, offset:.45}, {opacity:0}],
+      {duration:D, easing:"ease-in-out", fill:"forwards"});
+  flipTimer = setTimeout(endFlip, D + 60);
 }
 
 function goto(i, opts = {}){
   i = clamp(i, 0, SPREADS.length - 1);
   const back = opts.back ?? (i < cur);
+  const zu = $("#book").classList.contains("cover-mode");
+  // Der Wechsel über das Deckblatt hinweg ist ein Auf- oder Zuklappen,
+  // kein Umblättern — sonst klappt eine Seite, wo ein Deckel gehört.
+  if (i === 0 && !zu && !dayView) return closeBook();
+  if (i > 0 && zu){
+    openBook();
+    if (i !== 1) setTimeout(() => goto(i, {back:false}), 90);
+    return;
+  }
   if (i === cur && !dayView && !opts.force) return;
   memoScroll();
   if (isPhone() || reduced()){
@@ -1596,57 +1821,6 @@ function openDay(k){
   animateTurn(() => { dayView = k; }, false);
 }
 
-/** Klappt die aufliegende Seite um den Bundsteg weg.
-    Drei Ebenen arbeiten zusammen, damit es nach Papier aussieht:
-      · das Blatt selbst dreht sich
-      · ein Schatten wandert über die aufgeschlagene Seite darunter
-      · die Blattkante fängt kurz Licht, wenn das Blatt hochsteht
-    Kein 3D-Spektakel — die Bewegung soll glaubwürdig sein, nicht auffällig. */
-function animateTurn(mutate, back){
-  endFlip();                       // eine noch laufende Umblätterung sauber beenden
-  const flip = $("#flip"), src = back ? $(".page.left") : $(".page.right");
-  const sheet = document.createElement("div");
-  sheet.className = "flip-sheet " + (back ? "to-right" : "to-left");
-  sheet.style.left = back ? "0" : "50%";
-  sheet.style.transformOrigin = back ? "right center" : "left center";
-  sheet.innerHTML = `<div class="flip-face">${src.querySelector(".page-inner").innerHTML}</div>
-    <div class="shade"></div><div class="edge"></div>`;
-  // Der Klon ist reine Optik: nichts darin darf Fokus oder Klicks bekommen.
-  sheet.querySelectorAll("input,textarea,button,select,a").forEach(el => {
-    el.setAttribute("tabindex", "-1"); el.setAttribute("aria-hidden", "true");
-  });
-  flip.appendChild(sheet);
-  flip.classList.add("on");
-
-  mutate();
-  render();
-
-  const dir = back ? 1 : -1;
-  const D = 560;
-  // Leichtes Anheben in der Mitte (translateZ) lässt das Blatt abheben,
-  // statt wie eine Karte um die Achse zu kippen.
-  const anim = sheet.animate([
-      {transform:"rotateY(0deg) translateZ(0px)"},
-      {transform:`rotateY(${dir * 88}deg) translateZ(14px)`, offset:.5},
-      {transform:`rotateY(${dir * 172}deg) translateZ(0px)`}
-    ], {duration:D, easing:"cubic-bezier(.36,.02,.28,1)", fill:"forwards"});
-
-  const seite = back ? "right" : "left";
-  sheet.querySelector(".shade").animate([
-      {background:`linear-gradient(to ${seite}, rgba(0,0,0,0), rgba(0,0,0,.03))`, opacity:.2},
-      {background:`linear-gradient(to ${seite}, rgba(0,0,0,.04), rgba(0,0,0,.4))`, opacity:1, offset:.52},
-      {opacity:0}
-    ], {duration:D, easing:"ease-in-out", fill:"forwards"});
-
-  // Papierkante: schmal, hell, nur solange das Blatt aufgestellt ist
-  sheet.querySelector(".edge").animate(
-      [{opacity:0}, {opacity:.85, offset:.45}, {opacity:.6, offset:.62}, {opacity:0}],
-      {duration:D, easing:"ease-out", fill:"forwards"});
-
-  // Doppelt abgesichert: das Promise räumt normal auf, der Timer fängt Abbrüche ab.
-  anim.finished.then(endFlip).catch(() => {});
-  flipTimer = setTimeout(endFlip, D + 120);
-}
 
 function next(){
   if (isPhone()){
@@ -1924,9 +2098,9 @@ document.addEventListener("click", e => {
   const hit = sel => t.closest(sel);
   let el;
 
+  if (hit("#openBook"))              return openBook();
   if ((el = hit("[data-go]")))       return navigate(el.dataset.go);
   if ((el = hit("[data-day]")))      return openDay(el.dataset.day);
-  if (hit("#openBook"))              return goto(1);
   if (hit("#btnToc"))                return goto(1);
   if (hit("#btnTheme"))              return toggleTheme();
   if (hit("#pPrev"))                 return prev();
