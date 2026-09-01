@@ -1,131 +1,60 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#f4eee2" />
-  <title>2027 · Mein Jahr</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Digitales Bullet Journal 2027 – ein persönliches Buch für iPad und Handy.">
+<meta name="theme-color" content="#FAF7F0">
+<title>Mein Jahr 2027</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kaushan+Script&family=Caveat:wght@400;600;700&family=Architects+Daughter&family=Karla:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="app-shell">
-    <aside class="bookmarks" aria-label="Monatsnavigation">
-      <button class="bookmark is-active" data-page="cover">★</button>
-      <button class="bookmark" data-page="year">Jahr</button>
-      <button class="bookmark" data-page="jan">Jan</button>
-      <button class="bookmark" data-page="feb">Feb</button>
-      <button class="bookmark" data-page="mar">Mär</button>
-      <button class="bookmark" data-page="apr">Apr</button>
-      <button class="bookmark" data-page="may">Mai</button>
-      <button class="bookmark" data-page="jun">Jun</button>
-      <button class="bookmark" data-page="jul">Jul</button>
-      <button class="bookmark" data-page="aug">Aug</button>
-      <button class="bookmark" data-page="sep">Sep</button>
-      <button class="bookmark" data-page="oct">Okt</button>
-      <button class="bookmark" data-page="nov">Nov</button>
-      <button class="bookmark" data-page="dec">Dez</button>
-    </aside>
 
-    <main class="book" id="book">
-      <section class="page page-cover active" data-page-view="cover">
-        <div class="cover-stamp">PERSONAL JOURNAL</div>
-        <div class="cover-art" aria-hidden="true"><span>✿</span><span>☾</span><span>✦</span></div>
-        <p class="eyebrow">mein kleines Jahr</p>
-        <h1>2027</h1>
-        <p class="cover-name" contenteditable="true">[Name]</p>
-        <p class="cover-motto" contenteditable="true">[Motto für dieses Jahr]</p>
-        <p class="dedication" contenteditable="true">[Eine persönliche Widmung]</p>
-        <button class="primary-button open-book" data-page="year">Buch öffnen <span>→</span></button>
-      </section>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="rough" x="-12%" y="-12%" width="124%" height="124%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="3" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="rough2" x="-12%" y="-12%" width="124%" height="124%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="19" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+</svg>
 
-      <section class="page" data-page-view="year">
-        <div class="page-heading">
-          <div><p class="eyebrow">ein ganzes Jahr auf einen Blick</p><h2>2027</h2></div>
-          <button class="icon-button" data-page="cover" aria-label="Zum Deckblatt">↶</button>
-        </div>
-        <div class="year-layout">
-          <div class="mini-calendar-grid" id="miniCalendars"></div>
-          <aside class="year-note paper-note">
-            <span class="tape"></span>
-            <h3>Dieses Jahr möchte ich …</h3>
-            <div class="lined-area" contenteditable="true">kleine Schritte gehen,<br>mich erinnern und<br>schöne Momente sammeln.</div>
-            <button class="text-button" data-page="goals">Zu meinen Zielen →</button>
-          </aside>
-        </div>
-        <nav class="page-links">
-          <button data-page="goals">Ziele</button>
-          <button data-page="level10">Level 10 Life</button>
-          <button data-page="birthdays">Geburtstage</button>
-        </nav>
-      </section>
-
-      <section class="page" data-page-view="goals">
-        <div class="page-heading"><div><p class="eyebrow">vision board</p><h2>Meine Ziele</h2></div><span class="page-number">03</span></div>
-        <div class="vision-board">
-          <div class="goal-card goal-card-large"><span class="pin">✦</span><h3>Was darf wachsen?</h3><p contenteditable="true">Mein großes Jahresziel …</p><div class="progress-line"><span style="width:42%"></span></div><small>42 % geschafft</small></div>
-          <div class="photo-placeholder">＋<br><small>eigenes Foto</small></div>
-          <div class="goal-card"><h3>Ein kleiner Schritt</h3><p contenteditable="true">Heute kann ich …</p><label><input type="checkbox"> erledigt</label></div>
-          <div class="sticker-cluster">☀︎<br>♡<br>✿</div>
-        </div>
-      </section>
-
-      <section class="page" data-page-view="level10">
-        <div class="page-heading"><div><p class="eyebrow">balance check</p><h2>Level 10 Life</h2></div><span class="page-number">04</span></div>
-        <div class="level-layout">
-          <div class="life-wheel"><div class="wheel-center">mein<br>Leben</div><span class="axis a1">Gesundheit</span><span class="axis a2">Beziehungen</span><span class="axis a3">Freude</span><span class="axis a4">Lernen</span><span class="axis a5">Finanzen</span><span class="axis a6">Ich</span></div>
-          <div class="level-list">
-            <div class="level-row"><span>Gesundheit</span><input type="range" min="1" max="10" value="7"><b>7</b></div>
-            <div class="level-row"><span>Beziehungen</span><input type="range" min="1" max="10" value="8"><b>8</b></div>
-            <div class="level-row"><span>Freude</span><input type="range" min="1" max="10" value="6"><b>6</b></div>
-            <div class="level-row"><span contenteditable="true">Eigener Bereich</span><input type="range" min="1" max="10" value="5"><b>5</b></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="page" data-page-view="birthdays">
-        <div class="page-heading"><div><p class="eyebrow">wichtige Menschen</p><h2>Geburtstage</h2></div><span class="page-number">05</span></div>
-        <div class="birthday-list">
-          <div class="birthday-row"><span>Jan</span><strong contenteditable="true">Name eintragen</strong><em contenteditable="true">01.01.</em></div>
-          <div class="birthday-row"><span>Mär</span><strong contenteditable="true">Name eintragen</strong><em contenteditable="true">12.03.</em></div>
-          <div class="birthday-row"><span>Jul</span><strong contenteditable="true">Name eintragen</strong><em contenteditable="true">24.07.</em></div>
-          <div class="birthday-row"><span>Okt</span><strong contenteditable="true">Name eintragen</strong><em contenteditable="true">08.10.</em></div>
-        </div>
-        <button class="outline-button">＋ Geburtstag hinzufügen</button>
-      </section>
-
-      <section class="page month-page" data-page-view="jan" data-month="Januar">
-        <div class="month-hero winter"><p class="eyebrow">neuer Anfang</p><h2>Januar</h2><p class="month-quote" contenteditable="true">„Ein neues Kapitel beginnt.“</p><div class="month-doodle">❄︎ ✦ ❄︎</div></div>
-        <div class="month-actions"><button data-subpage="overview">Monatsübersicht</button><button data-subpage="mood">Moodtracker</button><button data-subpage="habit">Habittracker</button><button data-subpage="songs">Top Songs</button><button data-subpage="weeks">Wochen</button></div>
-        <div class="month-preview"><div><b>31</b><span>Tage voller Möglichkeiten</span></div><div><b>♡</b><span>Was wird dieser Monat bringen?</span></div></div>
-      </section>
-
-      <section class="page month-page" data-page-view="feb" data-month="Februar"><div class="month-hero blush"><p class="eyebrow">kleine Herzensmomente</p><h2>Februar</h2><p class="month-quote">„Zeit für Wärme.“</p><div class="month-doodle">♡ ✿ ♡</div></div><div class="month-actions"><button data-page="jan">Beispielmonat öffnen</button></div></section>
-      <section class="page month-page" data-page-view="mar" data-month="März"><div class="month-hero sage"><p class="eyebrow">aufblühen</p><h2>März</h2><p class="month-quote">„Alles darf wachsen.“</p><div class="month-doodle">☘︎ ✿ ☘︎</div></div></section>
-      <section class="page month-page" data-page-view="apr" data-month="April"><div class="month-hero rain"><p class="eyebrow">frische Gedanken</p><h2>April</h2><p class="month-quote">„Auch Regentage sind Teil der Reise.“</p><div class="month-doodle">☂︎ ☼ ☂︎</div></div></section>
-      <section class="page month-page" data-page-view="may" data-month="Mai"><div class="month-hero meadow"><p class="eyebrow">draußen zuhause</p><h2>Mai</h2><p class="month-quote">„Mehr von dem, was gut tut.“</p><div class="month-doodle">✿ ❀ ✿</div></div></section>
-      <section class="page month-page" data-page-view="jun" data-month="Juni"><div class="month-hero summer"><p class="eyebrow">leichte Tage</p><h2>Juni</h2><p class="month-quote">„Sonne im Herzen.“</p><div class="month-doodle">☼ ✦ ☼</div></div></section>
-      <section class="page month-page" data-page-view="jul" data-month="Juli"><div class="month-hero summer"><p class="eyebrow">sommergeschichten</p><h2>Juli</h2><p class="month-quote">„Sammle Augenblicke.“</p><div class="month-doodle">☼ ♡ ☼</div></div></section>
-      <section class="page month-page" data-page-view="aug" data-month="August"><div class="month-hero terracotta"><p class="eyebrow">goldene Stunden</p><h2>August</h2><p class="month-quote">„Das Leben darf leicht sein.“</p><div class="month-doodle">✦ ☼ ✦</div></div></section>
-      <section class="page month-page" data-page-view="sep" data-month="September"><div class="month-hero olive"><p class="eyebrow">ankommen</p><h2>September</h2><p class="month-quote">„Ein ruhiger Anfang.“</p><div class="month-doodle">❧ ✿ ❧</div></div></section>
-      <section class="page month-page" data-page-view="oct" data-month="Oktober"><div class="month-hero autumn"><p class="eyebrow">gemütliche Kapitel</p><h2>Oktober</h2><p class="month-quote">„Zeit für Tee und Träume.“</p><div class="month-doodle">❦ ☕ ❦</div></div></section>
-      <section class="page month-page" data-page-view="nov" data-month="November"><div class="month-hero mist"><p class="eyebrow">leise Momente</p><h2>November</h2><p class="month-quote">„Ich darf langsamer werden.“</p><div class="month-doodle">☾ ✦ ☾</div></div></section>
-      <section class="page month-page" data-page-view="dec" data-month="Dezember"><div class="month-hero christmas"><p class="eyebrow">mein Jahresende</p><h2>Dezember</h2><p class="month-quote">„Danke für dieses Jahr.“</p><div class="month-doodle">✦ ❄︎ ✦</div></div></section>
-
-      <section class="page" data-page-view="jan-overview"><div class="page-heading"><div><p class="eyebrow">januar 2027</p><h2>Monatsübersicht</h2></div><span class="page-number">06</span></div><div class="calendar-card" id="monthCalendar"></div><div class="notes-strip"><span contenteditable="true">Wichtige Termine …</span><span contenteditable="true">Meine Ziele …</span><span contenteditable="true">Notizen …</span></div></section>
-      <section class="page" data-page-view="jan-mood"><div class="page-heading"><div><p class="eyebrow">januar 2027</p><h2>Mein Moodtracker</h2></div></div><p class="helper-text">Tippe auf einen Tag und wähle deine Stimmung.</p><div class="mood-key"><button data-mood="glücklich">☀ glücklich</button><button data-mood="ruhig">☾ ruhig</button><button data-mood="müde">○ müde</button><button data-mood="gestresst">✧ gestresst</button><button data-mood="traurig">♡ traurig</button></div><div class="mood-grid" id="moodGrid"></div></section>
-      <section class="page" data-page-view="jan-habit"><div class="page-heading"><div><p class="eyebrow">januar 2027</p><h2>Meine Gewohnheiten</h2></div></div><div class="habit-table"><div class="habit-head"><span>Gewohnheit</span><span>01</span><span>02</span><span>03</span><span>…</span><span>Ziel</span></div><div class="habit-line"><strong>Schlaf</strong><span contenteditable="true">7</span><span contenteditable="true">8</span><span contenteditable="true">6</span><span>…</span><em>8 h</em></div><div class="habit-line"><strong>Trinken</strong><span contenteditable="true">2</span><span contenteditable="true">1,5</span><span contenteditable="true">2</span><span>…</span><em>2 l</em></div><div class="habit-line checks"><strong>Sport</strong><span>□</span><span>✓</span><span>□</span><span>…</span><em>ja/nein</em></div><div class="habit-line checks"><strong contenteditable="true">Eigene Gewohnheit</strong><span>□</span><span>□</span><span>✓</span><span>…</span><em>ja/nein</em></div></div><button class="outline-button">＋ Gewohnheit hinzufügen</button></section>
-      <section class="page" data-page-view="jan-songs"><div class="page-heading"><div><p class="eyebrow">soundtrack des monats</p><h2>Top Songs</h2></div></div><div class="song-list"><div class="song-card"><b>01</b><div class="album-placeholder">♫</div><div><strong contenteditable="true">Songtitel</strong><span contenteditable="true">Künstler</span><small contenteditable="true">Warum dieser Song?</small></div></div><div class="song-card"><b>02</b><div class="album-placeholder">♫</div><div><strong contenteditable="true">Songtitel</strong><span contenteditable="true">Künstler</span><small contenteditable="true">Eine Erinnerung …</small></div></div><div class="song-card"><b>03</b><div class="album-placeholder">♫</div><div><strong contenteditable="true">Songtitel</strong><span contenteditable="true">Künstler</span><small contenteditable="true">Notiz …</small></div></div></div><button class="outline-button">＋ Song hinzufügen</button></section>
-      <section class="page" data-page-view="jan-weeks"><div class="page-heading"><div><p class="eyebrow">januar 2027</p><h2>Meine Wochen</h2></div></div><div class="week-grid"><button class="day-card" data-day="1"><b>MO 01</b><span>Termine …</span><small>Dankbar für …</small></button><button class="day-card" data-day="2"><b>DI 02</b><span>Termine …</span><small>Dankbar für …</small></button><button class="day-card" data-day="3"><b>MI 03</b><span>Termine …</span><small>Dankbar für …</small></button><button class="day-card" data-day="4"><b>DO 04</b><span>Termine …</span><small>Dankbar für …</small></button><button class="day-card" data-day="5"><b>FR 05</b><span>Termine …</span><small>Dankbar für …</small></button><button class="day-card" data-day="6"><b>SA 06</b><span>Termine …</span><small>Dankbar für …</small></button><button class="day-card" data-day="7"><b>SO 07</b><span>Termine …</span><small>Dankbar für …</small></button></div></section>
-    </main>
-
-    <div class="mobile-nav">
-      <button data-page="cover">⌂</button><button data-page="year">2027</button><button data-page="jan">Jan</button><button data-page="goals">♡</button><button id="nextPage">→</button>
+<div id="desk">
+  <div id="book" class="cover-mode">
+    <button class="turn prev" id="tPrev" aria-label="Zurückblättern"><i></i></button>
+    <button class="turn next" id="tNext" aria-label="Weiterblättern"><i></i></button>
+    <div id="ytabs" role="tablist" aria-label="Jahresbereich"></div>
+    <div id="spread">
+      <div class="page left"><div class="page-inner" id="pgL"></div><div class="folio"></div></div>
+      <div class="page right"><div class="page-inner" id="pgR"></div><div class="folio"></div></div>
     </div>
+    <div id="flip" aria-hidden="true"></div>
+    <div id="marks" role="tablist" aria-label="Monats-Lesezeichen"></div>
   </div>
-  <div class="toast" id="toast">Gespeichert</div>
-  <script src="app.js"></script>
+</div>
+
+<div id="pager">
+  <button id="pPrev" aria-label="Vorherige Seite"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg></button>
+  <span class="pl" id="pLabel"></span>
+  <button id="pNext" aria-label="Nächste Seite"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg></button>
+</div>
+
+<div id="sync"><span class="dot"></span><span id="syncTxt">Alles gesichert</span></div>
+<div id="corner">
+  <button id="btnToc">Inhalt</button>
+  <button id="btnTheme">Nachtlicht</button>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="veil"></div>
+<input type="file" id="filePick" accept="image/*" hidden>
+
+<script src="app.js"></script>
 </body>
 </html>
